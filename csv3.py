@@ -115,19 +115,19 @@ def click_element(driver, element, wait_time=SHORT_WAIT):
             time.sleep(0.3)
             return True
         except Exception as js_e:
-            print(f"       JavaScript Click中にエラー: {js_e}")
+            print(f"        JavaScript Click中にエラー: {js_e}")
             return False
     except StaleElementReferenceException:
         # 要素が古くなった（DOMから削除されたなど）場合
-        print("       Click試行中に要素がStaleになりました。再取得が必要です。")
+        print("        Click試行中に要素がStaleになりました。再取得が必要です。")
         return False
     except (InvalidSessionIdException, NoSuchWindowException) as e_session:
         # セッションIDが無効、またはウィンドウが存在しない場合
-        print(f"       Click中にセッション/ウィンドウエラー: {e_session}")
+        print(f"        Click中にセッション/ウィンドウエラー: {e_session}")
         raise # このエラーは致命的なので上位に伝播させる
     except Exception as e:
         # その他の予期せぬエラー
-        print(f"       Click中に予期せぬエラー: {e}")
+        print(f"        Click中に予期せぬエラー: {e}")
         return False
 
 def select_option_by_text(driver, select_element, option_text, fallback_to_js=True):
@@ -177,14 +177,14 @@ def select_option_by_text(driver, select_element, option_text, fallback_to_js=Tr
                     # JavaScriptでもオプションが見つからなかった場合
                     return False
             except (InvalidSessionIdException, NoSuchWindowException) as e_session:
-                print(f"       JS選択中にセッション/ウィンドウエラー: {e_session}")
+                print(f"        JS選択中にセッション/ウィンドウエラー: {e_session}")
                 raise # 致命的エラー
             except Exception as js_error:
-                print(f"    JavaScriptによる選択中にエラー: {js_error}")
+                print(f"      JavaScriptによる選択中にエラー: {js_error}")
                 return False
         else:
              # フォールバックが無効な場合は失敗
-            return False
+             return False
 
 def get_text_by_xpath(driver, xpath, default=""):
     """指定されたXPathの要素のテキストを取得するヘルパー関数"""
@@ -193,23 +193,17 @@ def get_text_by_xpath(driver, xpath, default=""):
         element = WebDriverWait(driver, SHORT_WAIT).until(
             EC.presence_of_element_located((By.XPATH, xpath))
         )
-        # 要素が表示されているかも確認（オプション、必要に応じてコメント解除）
-        # WebDriverWait(driver, SHORT_WAIT).until(EC.visibility_of(element))
         # テキストを取得し正規化
         text_content = normalize_text(element.text)
         # テキストが存在すればそれを、なければデフォルト値を返す
         return text_content if text_content else default
     except (TimeoutException, NoSuchElementException):
-        # 要素が見つからない、またはタイムアウトした場合はデフォルト値を返す
-        # print(f"       [情報] get_text_by_xpath: 要素が見つかりません/タイムアウト ({xpath})") # 必要ならログ出力
         return default
     except StaleElementReferenceException:
-        # 要素が古くなった場合
-        print(f"  [警告] get_text_by_xpath: 要素がStaleになりました ({xpath})。デフォルト値「{default}」を使用。")
+        print(f"   [警告] get_text_by_xpath: 要素がStaleになりました ({xpath})。デフォルト値「{default}」を使用。")
         return default
     except Exception as e:
-        # その他の予期せぬエラー
-        print(f"  [警告] get_text_by_xpath: 予期せぬエラー ({xpath}): {e}。デフォルト値「{default}」を使用。")
+        print(f"   [警告] get_text_by_xpath: 予期せぬエラー ({xpath}): {e}。デフォルト値「{default}」を使用。")
         return default
 
 def generate_english_url(current_url):
@@ -226,24 +220,22 @@ def generate_english_url(current_url):
         ))
         return english_url
     except Exception as e:
-        print(f"  [警告] 英語URLの生成に失敗: {e}。元のURLを返します: {current_url}")
+        print(f"   [警告] 英語URLの生成に失敗: {e}。元のURLを返します: {current_url}")
         return current_url # 失敗した場合は元のURLを返す
 
 # --- ★★★ get_syllabus_details 関数の修正 ★★★ ---
 def get_syllabus_details(driver, current_year, screenshots_dir):
     """
-    シラバス詳細ページから日本語と英語の情報を取得。
-    JSレンダリングを考慮し、英語ページでテーブルデータ再取得を試行。
+    シラバス詳細ページから指定された日本語と英語の情報を取得。
     """
     details_ja = {'year_scraped': current_year} # スクレイピングした年度を記録
-    details_en_desc = {} # 英語の説明文用
     details_en_table_rerun = {} # 英語ページで再取得したテーブルデータ用
     japanese_url = "N/A"
 
     # --- 1. 日本語ページの情報をまず取得 ---
     try:
         japanese_url = driver.current_url # 現在のURL (日本語版のはず)
-        print(f"    日本語ページ処理中: {japanese_url}")
+        print(f"     日本語ページ処理中: {japanese_url}")
         # ページの基本要素(body)が表示されるまで待機
         WebDriverWait(driver, ELEMENT_WAIT_TIMEOUT).until(EC.presence_of_element_located((By.TAG_NAME, "body")))
         time.sleep(MEDIUM_WAIT) # JS描画などを考慮して少し長めに待機
@@ -265,139 +257,111 @@ def get_syllabus_details(driver, current_year, screenshots_dir):
                         details_ja['course_id'] = reg_num
                     else:
                          # 隠しinput要素 (nameに 'id' や 'entno' を含む) から取得
-                        hidden_elements = driver.find_elements(By.XPATH, "//input[@type='hidden' and (contains(@name, 'id') or contains(@name, 'entno'))]")
-                        for hidden in hidden_elements:
-                            value = hidden.get_attribute('value')
-                            if value and value.isdigit():
-                                details_ja['course_id'] = value
-                                break # 最初に見つかったものを採用
+                         hidden_elements = driver.find_elements(By.XPATH, "//input[@type='hidden' and (contains(@name, 'id') or contains(@name, 'entno'))]")
+                         for hidden in hidden_elements:
+                             value = hidden.get_attribute('value')
+                             if value and value.isdigit():
+                                 details_ja['course_id'] = value
+                                 break # 最初に見つかったものを採用
                 except Exception:
-                    # テーブルや隠し要素からの取得失敗はここでは無視
-                    pass
+                    pass # テーブルや隠し要素からの取得失敗はここでは無視
         except Exception as e:
-            print(f"  [警告] Course ID の取得中にエラー: {e}")
+            print(f"   [警告] Course ID の取得中にエラー: {e}")
 
         # Course IDがどうしても取得できない場合は、必須データ欠落としてエラーを発生させる
         if not details_ja.get('course_id'):
             raise MissingCriticalDataError(f"必須データ(Course ID)の取得に失敗 (URL: {japanese_url})")
 
-        # --- 日本語情報の取得マップ定義 (説明文含む) ---
-        # キー: 辞書キー, 値: (日本語ラベル, XPath, デフォルト値)
+        # --- ★★★ 日本語情報の取得マップ定義 (指定されたフィールドのみ) ★★★ ---
         info_map_ja = {
-            # テーブルデータ
             'name': ("科目名", "//h2[@class='class-name']", f"名称不明-{details_ja['course_id']}"),
             'semester': ("学期", "//tr[th[normalize-space()='年度・学期']]/td", "学期不明"),
-            'professor': ("担当者名", "//tr[th[contains(text(),'担当者名')]]/td", ""), # 担当者名は空を許容する場合がある
+            'professor': ("担当者名", "//tr[th[contains(text(),'担当者名')]]/td", ""), # 空を許容
             'credits': ("単位", "//tr[th[contains(text(),'単位')]]/td", "単位不明"),
             'field': ("分野", "//tr[th[contains(text(),'分野')]]/td", "分野不明"),
-            'location': ("教室", "//tr[th[contains(text(),'教室')]]/td", "教室不明"), # JSON出力時に 'Classroom' に変更
+            'location': ("教室", "//tr[th[contains(text(),'教室')]]/td", "教室不明"),
             'day_period': ("曜日時限", "//tr[th[contains(text(),'曜日時限')]]/td", "曜日時限不明"),
-            # 説明文データ (XPathは日本語見出しに依存)
-            'outline': ("講義概要", "//h3[contains(text(), '講義概要')]/following-sibling::div[@class='contents']", ""),
-            'objectives': ("授業科目の内容・目的・方法・到達目標", "//h3[contains(text(), '授業科目の内容・目的・方法・到達目標')]/following-sibling::div[@class='contents']", ""),
-            'preparation': ("準備学修（予習・復習等）", "//h3[contains(text(), '準備学修（予習・復習等）')]/following-sibling::div[@class='contents']", ""),
-            'plan': ("授業の計画", "//h3[contains(text(), '授業の計画')]/following-sibling::div[@class='contents']", ""),
-            'grading': ("成績評価方法", "//h3[contains(text(), '成績評価方法')]/following-sibling::div[@class='contents']", ""),
-            'textbook': ("テキスト（教科書）", "//h3[contains(text(), 'テキスト（教科書）')]/following-sibling::div[@class='contents']", ""),
-            'comments': ("担当教員から履修者へのコメント", "//h3[contains(text(), '担当教員から履修者へのコメント')]/following-sibling::div[@class='contents']", ""),
+            'selection_method': ("選抜方法", "//tr[th[contains(text(),'選抜方法')]]/td", ""), # 空を許容
         }
         # ★ 不適切と判断する科目名のパターン (例: 検索結果一覧ページのタイトルなど)
         INVALID_COURSE_NAME_PATTERNS = ["慶應義塾大学 シラバス・時間割"]
 
         critical_data_missing = False # 必須データ欠落フラグ
         missing_details = [] # 欠落したデータの詳細リスト
-        # テーブルデータのキーリスト (エラーチェック用)
-        table_keys = ['name', 'semester', 'professor', 'credits', 'field', 'location', 'day_period']
-        # ★★★ ログ追加: 日本語情報取得開始 ★★★
-        print("    --- 日本語情報取得開始 ---")
+        # ★★★ 取得対象のキーリスト (エラーチェック用) ★★★
+        target_keys = list(info_map_ja.keys())
+
+        print("     --- 日本語情報取得開始 ---")
         # --- 日本語情報取得ループ ---
         for key, (label, xpath, default_value, *_) in info_map_ja.items():
-            # ★★★ ログ追加: 各項目取得試行 ★★★
-            print(f"      日本語 {label} 取得試行...")
-            # get_text_by_xpath を使用してテキスト取得
+            print(f"       日本語 {label} 取得試行...")
             details_ja[key] = get_text_by_xpath(driver, xpath, default_value)
-            is_table_field = key in table_keys # テーブルデータかどうか
 
-            # ★★★ テーブルデータに対する必須チェック ★★★
-            if is_table_field:
+            # ★★★ 必須チェック (担当者名、選抜方法以外) ★★★
+            if key not in ['professor', 'selection_method']:
                 if key == 'name':
                     # 科目名がデフォルト値と同じか、不適切パターンに含まれる場合
                     if details_ja[key] == default_value or any(pattern in details_ja[key] for pattern in INVALID_COURSE_NAME_PATTERNS):
                         critical_data_missing = True
                         missing_details.append(f"{label}(ja): 不適切「{details_ja[key]}」")
-                # 担当者名以外で、値がデフォルト値と同じか空文字の場合
-                elif key != 'professor' and (details_ja[key] == default_value or not details_ja[key]):
+                # その他の必須項目がデフォルト値と同じか空文字の場合
+                elif details_ja[key] == default_value or not details_ja[key]:
                     critical_data_missing = True
                     missing_details.append(f"{label}(ja): 未取得/空")
-                # 担当者名が空の場合も許容する（必要に応じて条件変更）
 
-        # --- 日本語のテーブルデータ取得で失敗があれば、ここでスクリプト停止 ---
+        # --- 日本語の必須データ取得で失敗があれば、ここでスクリプト停止 ---
         if critical_data_missing:
             raise MissingCriticalDataError(f"必須日本語データ取得失敗 (URL: {japanese_url}): {'; '.join(missing_details)}")
-        print("    --- 日本語情報取得完了 ---")
+        print("     --- 日本語情報取得完了 ---")
 
     # --- 日本語ページ取得時の各種エラーハンドリング ---
     except TimeoutException as e_timeout:
-        print(f"  [エラー] 日本語ページ({japanese_url})の基本要素読み込みタイムアウト。スキップします。 {e_timeout}")
+        print(f"   [エラー] 日本語ページ({japanese_url})の基本要素読み込みタイムアウト。スキップします。 {e_timeout}")
         save_screenshot(driver, f"detail_ja_load_timeout_{current_year}", screenshots_dir)
-        return None # このシラバスはスキップ
+        return None
     except (InvalidSessionIdException, NoSuchWindowException) as e_session:
-        print(f"  [エラー] 日本語ページ処理中にセッション/ウィンドウエラー: {e_session}")
-        raise # 上位で処理
-    except MissingCriticalDataError as e_critical: # Course ID or Table Data Missing
-         # エラーメッセージは上で出力済み
-        print(f"  [エラー] {e_critical}")
+        print(f"   [エラー] 日本語ページ処理中にセッション/ウィンドウエラー: {e_session}")
+        raise
+    except MissingCriticalDataError as e_critical:
+        print(f"   [エラー] {e_critical}")
         save_screenshot(driver, f"detail_ja_critical_missing_{current_year}", screenshots_dir)
-        raise # mainで捕捉されsys.exit
+        raise
     except Exception as e_ja:
-        print(f"  [エラー] 日本語ページ({japanese_url})の処理中に予期せぬエラー: {e_ja}")
+        print(f"   [エラー] 日本語ページ({japanese_url})の処理中に予期せぬエラー: {e_ja}")
         save_screenshot(driver, f"detail_ja_unknown_error_{current_year}", screenshots_dir)
         traceback.print_exc()
-        return None # このシラバスはスキップ
+        return None
 
     # --- 2. 英語ページの情報を取得 ---
     english_url = generate_english_url(japanese_url) # 英語ページのURLを生成
-    print(f"    英語ページ処理中: {english_url}")
+    print(f"     英語ページ処理中: {english_url}")
     try:
         driver.get(english_url) # 英語ページにアクセス
         # ページの基本要素(body)が表示されるまで待機
         WebDriverWait(driver, ELEMENT_WAIT_TIMEOUT).until(EC.presence_of_element_located((By.TAG_NAME, "body")))
-        print(f"    英語ページ読み込み完了。JavaScriptレンダリング待機中 ({JS_RENDER_WAIT}秒)...")
+        print(f"     英語ページ読み込み完了。JavaScriptレンダリング待機中 ({JS_RENDER_WAIT}秒)...")
         time.sleep(JS_RENDER_WAIT) # ★★★ JSレンダリング待機 ★★★
-        print(f"    待機完了。英語情報取得試行...")
-        # ★★★ ログ追加: 英語情報取得開始 ★★★
-        print("    --- 英語情報取得開始 ---")
+        print(f"     待機完了。英語情報取得試行...")
+        print("     --- 英語情報取得開始 ---")
 
-        # --- 英語の説明文を取得 (XPathは日本語版と同じと仮定) ---
-        description_keys = ['outline', 'objectives', 'preparation', 'plan', 'grading', 'textbook', 'comments']
-        for key in description_keys:
+        # --- ★★★ 英語ページのテーブルデータを再取得試行 (指定フィールドのみ) ★★★ ---
+        for key in target_keys: # info_map_ja のキーを使用
             if key in info_map_ja:
                 label, xpath, _, *_ = info_map_ja[key] # 日本語マップからXPath取得
-                # ★★★ ログ追加: 各項目取得試行 ★★★
-                print(f"      英語 {label}(説明文) 取得試行...")
-                # 英語ページで同じXPathを使って説明文テキストを取得
-                details_en_desc[key] = get_text_by_xpath(driver, xpath, "") # 取得失敗は許容 (空文字になる)
-
-        # --- ★★★ 英語ページのテーブルデータを再取得試行 ★★★ ---
-        # JSレンダリング後にテーブルの内容が変わる可能性があるため
-        for key in table_keys:
-            if key in info_map_ja:
-                label, xpath, _, *_ = info_map_ja[key] # 日本語マップからXPath取得
-                 # ★★★ ログ追加: 各項目取得試行 ★★★
-                print(f"      英語 {label}(テーブル再取得) 取得試行...")
+                print(f"       英語 {label}(テーブル再取得) 取得試行...")
                 # 英語ページで同じXPathを使ってテーブルテキスト取得を試みる
                 details_en_table_rerun[key] = get_text_by_xpath(driver, xpath, "") # 取得失敗は許容
-        print("    --- 英語情報取得完了 ---")
+        print("     --- 英語情報取得完了 ---")
 
     # --- 英語ページ取得時のエラーハンドリング (エラーでも続行) ---
     except TimeoutException as e_timeout_en:
-        print(f"  [警告] 英語ページ({english_url})の読み込みタイムアウト。英語情報は一部欠落します。 {e_timeout_en}")
+        print(f"   [警告] 英語ページ({english_url})の読み込みタイムアウト。英語情報は一部欠落します。 {e_timeout_en}")
         save_screenshot(driver, f"detail_en_load_timeout_{current_year}", screenshots_dir)
     except (InvalidSessionIdException, NoSuchWindowException) as e_session:
-        print(f"  [エラー] 英語ページ処理中にセッション/ウィンドウエラー: {e_session}")
-        raise # セッションエラーは致命的として上位へ
+        print(f"   [エラー] 英語ページ処理中にセッション/ウィンドウエラー: {e_session}")
+        raise
     except Exception as e_en:
-        print(f"  [警告] 英語ページ({english_url})の処理中に予期せぬエラー: {e_en}。英語情報は一部欠落します。")
+        print(f"   [警告] 英語ページ({english_url})の処理中に予期せぬエラー: {e_en}。英語情報は一部欠落します。")
         save_screenshot(driver, f"detail_en_unknown_error_{current_year}", screenshots_dir)
         traceback.print_exc()
 
@@ -407,13 +371,8 @@ def get_syllabus_details(driver, current_year, screenshots_dir):
         'year_scraped': details_ja['year_scraped'],
         'translations': { 'ja': {}, 'en': {} } # 日本語と英語の情報を格納する辞書
     }
-    # ★★★ 修正: info_map_jaから不要なキーを除外 ★★★
-    # 'day_period' や詳細説明系のキーは最終出力のtranslationsには含めない場合がある
-    # ここでは一旦全てコピーし、aggregate_syllabus_dataで最終調整する方針
-    # all_keys = list(info_map_ja.keys())
-    all_keys_to_copy = ['name', 'semester', 'professor', 'credits', 'field', 'location', 'day_period',
-                       'outline', 'objectives', 'preparation', 'plan', 'grading', 'textbook', 'comments']
-
+    # ★★★ コピー対象キーを target_keys に限定 ★★★
+    all_keys_to_copy = target_keys
 
     # 日本語情報を final_details に設定
     for key in all_keys_to_copy:
@@ -426,68 +385,46 @@ def get_syllabus_details(driver, current_year, screenshots_dir):
 
         # 優先1: 英語ページで再取得したテーブルデータを確認
         rerun_value = details_en_table_rerun.get(key)
-        if rerun_value and key in table_keys: # 再取得データが存在し、かつテーブルキーの場合
+        if rerun_value: # 再取得データが存在する場合 (キーは target_keys なのでテーブルデータのみ)
             is_plausibly_english = False # 英語らしい値かどうかのフラグ
             # キーに応じて英語らしく見えるか判定
-            if key in ['name', 'professor', 'field', 'location']:
-                 # 日本語と異なり、かつ英字が含まれている場合を英語とみなす
+            if key in ['name', 'professor', 'field', 'location', 'selection_method']:
                 if rerun_value != ja_value and re.search(r'[a-zA-Z]', rerun_value):
                     is_plausibly_english = True
             elif key == 'semester':
-                 # "Spring", "Fall" などが含まれている場合
                 is_plausibly_english = any(eng_term.lower() in rerun_value.lower() for eng_term in ["Spring", "Fall", "Summer", "Winter", "Year"])
             elif key == 'day_period':
-                 # "Mon", "Tue" などが含まれている場合
                 is_plausibly_english = any(eng_day in rerun_value for eng_day in ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"])
             elif key == 'credits':
-                 # 単位は数字の場合が多いので、日本語と異なるか、数字のみなら採用
                 if rerun_value != ja_value or re.fullmatch(r'[\d.]+', rerun_value):
                     is_plausibly_english = True
 
             if is_plausibly_english:
                 en_value_to_set = rerun_value # 英語らしい値を採用
 
-        # 優先2: 英語の説明文データを使用 (テーブルデータが英語でなかった場合、または説明文キーの場合)
-        if (en_value_to_set == ja_value and key in table_keys) or (key in description_keys):
-            desc_value = details_en_desc.get(key)
-            if desc_value: # 英語説明文が取得できていれば採用 (テーブルデータの上書きも含む)
-                 # ★★★ 追加チェック: 説明文キーでも、日本語と全く同じなら採用しない方が良い場合も？
-                 # 例えば概要(outline)などが日本語のままコピーされているケース
-                 if key in description_keys and desc_value == ja_value and re.search(r'[ぁ-んァ-ン一-龯]', desc_value):
-                      pass # 日本語と同一で日本語文字が含まれる場合は、コピーされただけとみなし採用しない
-                 else:
-                    en_value_to_set = desc_value
-
-        # 優先3: 日本語からの変換を試行 (上記で英語値が設定されなかった場合)
+        # 優先2: 日本語からの変換を試行 (上記で英語値が設定されなかった場合)
         if en_value_to_set == ja_value: # まだ日本語の値のままの場合
             if key == 'semester':
-                # 学期の日本語->英語変換ロジック
                 sem_map = {"春学期": "Spring", "秋学期": "Fall", "通年": "Full Year", "春": "Spring", "秋": "Fall"}
                 matched_jp_key = None
                 for jp_key in sem_map:
                     if jp_key in ja_value: matched_jp_key = jp_key; break
                 if matched_jp_key: en_value_to_set = ja_value.replace(matched_jp_key, sem_map[matched_jp_key]).strip()
-                # 変換できなければ日本語のまま
 
             elif key == 'day_period':
-                 # 曜日時限の日本語->英語変換ロジック
                 day_map = {"月": "Mon", "火": "Tue", "水": "Wed", "木": "Thu", "金": "Fri", "土": "Sat", "日": "Sun"}
-                parts = ja_value.split() # スペースで分割 (例: "月 2")
-                if len(parts) >= 1 and parts[0] in day_map: # 最初の部分が曜日のキーに一致するか
-                    en_value_to_set = f"{day_map[parts[0]]} {' '.join(parts[1:])}".strip() # 英語曜日に置換
-                # 変換できなければ日本語のまま (例: "集中")
+                parts = ja_value.split()
+                if len(parts) >= 1 and parts[0] in day_map:
+                    en_value_to_set = f"{day_map[parts[0]]} {' '.join(parts[1:])}".strip()
 
         # 最終的な英語の値を設定
         final_details['translations']['en'][key] = en_value_to_set
 
-    # --- トップレベルの semester, day_period を設定 (英語優先) ---
-    # 集約処理で使いやすいように、主要な情報をトップレベルにも配置
+    # --- トップレベルの semester, professor_ja を設定 (集約用) ---
     final_details['semester'] = final_details['translations']['en'].get('semester') or final_details['translations']['ja'].get('semester', '不明')
-    final_details['day_period'] = final_details['translations']['en'].get('day_period') or final_details['translations']['ja'].get('day_period', '不明')
-    # --- トップレベルの professor_ja を設定 ---
     final_details['professor_ja'] = final_details['translations']['ja'].get('professor', '') # 日本語の教授名
 
-    print(f"      ✓ 詳細情報取得完了: 「{final_details['translations']['ja'].get('name', '不明')}」")
+    print(f"       ✓ 詳細情報取得完了: 「{final_details['translations']['ja'].get('name', '不明')}」")
     return final_details
 
 
@@ -497,63 +434,55 @@ def aggregate_syllabus_data(all_raw_data):
     複数年度にわたる生データを集約し、指定されたJSON形式に整形する。
     course_id, professor_ja, semester (英語優先) をキーとしてデータをグループ化。
     """
-    if not all_raw_data: return [] # データがなければ空リストを返す
-    grouped_by_key = {} # 集約用辞書 {集約キー: [年度データリスト]}
-    skipped_count = 0 # course_id がない等の理由でスキップされた件数
+    if not all_raw_data: return []
+    grouped_by_key = {}
+    skipped_count = 0
     for item in all_raw_data:
         course_id = item.get('course_id')
-        if not course_id: skipped_count += 1; continue # course_id がなければスキップ
+        if not course_id: skipped_count += 1; continue
 
-        # professor_ja をキーの一部として使用 (複数教員の場合も考慮)
         professor_ja_key = item.get('professor_ja', '')
-        # '/' で分割し、空白除去、ソートしてタプル化 (順序不問にするため)
         professors = tuple(sorted([p.strip() for p in professor_ja_key.split('/') if p.strip()]))
 
-        # トップレベルの semester (英語優先のはず) をキーの一部として使用
         semester_agg_key = item.get('semester', 'unknown')
-        # 不明な学期は 'unknown' に統一
         if not semester_agg_key or semester_agg_key in ["学期不明", "不明"]: semester_agg_key = "unknown"
 
-        # 集約キー (コースID, 日本語教員タプル, 学期)
         agg_key = (course_id, professors, semester_agg_key)
 
-        # 集約辞書にデータを追加
         if agg_key not in grouped_by_key: grouped_by_key[agg_key] = []
         grouped_by_key[agg_key].append(item)
 
     if skipped_count > 0: print(f"ID不足により {skipped_count} 件のデータが集約からスキップされました。")
 
-    final_list = [] # 最終的な出力リスト
-    # 集約されたデータを整形
+    final_list = []
     for agg_key, year_data_list in grouped_by_key.items():
-        # 同じキーのデータは年度(year_scraped)で降順ソート (最新年度を先頭に)
         year_data_list.sort(key=lambda x: x['year_scraped'], reverse=True)
-        latest_data = year_data_list[0] # 最新年度のデータを代表として使用
-        # スクレイピングされた全年度をリストアップ (整数)
+        latest_data = year_data_list[0]
         years_scraped_int = sorted(list(set(d['year_scraped'] for d in year_data_list)))
-        # ★★★ 修正: available_years (文字列リスト) を作成 ★★★
         available_years_str = [str(y) for y in years_scraped_int]
 
-        # --- ★★★ 修正: 指定されたJSON形式に合わせてデータを構築 ★★★ ---
-
-        # translations オブジェクトを準備
+        # --- ★★★ 指定されたJSON形式に合わせてデータを構築 ★★★ ---
         trans_ja = latest_data.get('translations', {}).get('ja', {})
         trans_en = latest_data.get('translations', {}).get('en', {})
 
-        # 教室情報 (英語優先)
-        classroom_en = trans_en.get('location', '')
-        classroom_ja = trans_ja.get('location', '')
-        classroom = classroom_en if classroom_en else classroom_ja
-
         # 学期情報 (英語優先、小文字化)
         semester_en = trans_en.get('semester', '')
-        semester_ja = trans_ja.get('semester', 'unknown') # 日本語も取得しておく
-        semester = (semester_en if semester_en else semester_ja).lower()
+        semester_ja = trans_ja.get('semester', 'unknown')
+        semester_final = (semester_en if semester_en else semester_ja).lower()
+        # "unknown" などはそのまま小文字にする
+        if semester_final in ["学期不明", "不明"]: semester_final = "unknown"
+
+
+        # 教室情報 (英語優先) - これは最終JSONには含めないが、必要なら追加
+        # classroom_en = trans_en.get('location', '')
+        # classroom_ja = trans_ja.get('location', '')
+        # classroom_final = classroom_en if classroom_en else classroom_ja
 
         # professors リストを作成
         professors_list = []
         prof_ja_raw = trans_ja.get('professor', '')
         prof_en_raw = trans_en.get('professor', '')
+        # ★★★ department には field の値を使用 ★★★
         dept_ja = trans_ja.get('field', '')
         dept_en = trans_en.get('field', '')
 
@@ -572,39 +501,41 @@ def aggregate_syllabus_data(all_raw_data):
                     "en": dept_en
                 }
             }
+            # 名前が空でない場合のみリストに追加
             if prof_obj["name"]["ja"] or prof_obj["name"]["en"]:
                 professors_list.append(prof_obj)
 
         # 最終的なアイテムを作成
         aggregated_item = {
             "course_id": latest_data['course_id'],
-            # ★★★ 修正: year を '&' 区切り文字列に ★★★
             "year": "&".join(available_years_str),
-            # ★★★ 修正: semester を小文字に ★★★
-            "semester": semester,
-             # ★★★ 追加: classroom フィールド ★★★
-            "classroom": classroom,
+            "semester": semester_final,
+            # "classroom": classroom_final, # ★★★ 必要であれば追加 ★★★
             "translations": {
                 "ja": {
-                    # ★★★ 修正: 必要なキーのみ選択、キー名を変更 ★★★
+                    # ★★★ 指定されたキーのみ選択 ★★★
                     "name": trans_ja.get('name', ''),
                     "field": trans_ja.get('field', ''),
                     "credits": trans_ja.get('credits', ''),
-                    "semester": trans_ja.get('semester', ''), # 日本語の学期も保持
-                    "Classroom": trans_ja.get('location', '') # キー名を変更
+                    "semester": trans_ja.get('semester', ''), # 日本語の学期
+                    # ★★★ 必要に応じて追加 (例のフォーマットにはない) ★★★
+                    # "Classroom": trans_ja.get('location', ''),
+                    # "day_period": trans_ja.get('day_period', ''),
+                    # "selection_method": trans_ja.get('selection_method', ''),
                 },
                 "en": {
-                     # ★★★ 修正: 必要なキーのみ選択、キー名を変更、semesterを小文字に ★★★
+                    # ★★★ 指定されたキーのみ選択 ★★★
                     "name": trans_en.get('name', ''),
                     "field": trans_en.get('field', ''),
                     "credits": trans_en.get('credits', ''),
-                    "semester": semester_en.lower() if semester_en else '', # 英語の学期を小文字で保持
-                    "Classroom": trans_en.get('location', '') # キー名を変更
+                    "semester": semester_en.lower() if semester_en else '', # 英語の学期 (小文字)
+                    # ★★★ 必要に応じて追加 (例のフォーマットにはない) ★★★
+                    # "Classroom": trans_en.get('location', ''),
+                    # "day_period": trans_en.get('day_period', ''),
+                    # "selection_method": trans_en.get('selection_method', ''),
                 }
             },
-             # ★★★ 追加: professors リスト ★★★
             "professors": professors_list,
-             # ★★★ 追加: available_years リスト ★★★
             "available_years": available_years_str
         }
         final_list.append(aggregated_item)
@@ -642,7 +573,7 @@ def login(driver, email, password, screenshots_dir):
             # ボタンが見つからなかった場合、Enterキー送信を試す
             if not next_button:
                 try: username_field.send_keys(Keys.RETURN)
-                except Exception as e_enter: print(f"  Enterキー送信中にエラー: {e_enter}"); save_screenshot(driver, f"login_next_button_error_{attempt+1}", screenshots_dir); raise Exception("「次へ」ボタン処理失敗")
+                except Exception as e_enter: print(f"   Enterキー送信中にエラー: {e_enter}"); save_screenshot(driver, f"login_next_button_error_{attempt+1}", screenshots_dir); raise Exception("「次へ」ボタン処理失敗")
 
             # パスワード入力フィールドが表示されるまで待機
             WebDriverWait(driver, ELEMENT_WAIT_TIMEOUT).until(EC.visibility_of_element_located((By.XPATH, "//input[@type='password']")))
@@ -667,7 +598,7 @@ def login(driver, email, password, screenshots_dir):
             # ボタンが見つからなかった場合、Enterキー送信を試す
             if not signin_button:
                 try: password_field.send_keys(Keys.RETURN)
-                except Exception as e_enter: print(f"  Enterキー送信中にエラー: {e_enter}"); save_screenshot(driver, f"login_signin_button_error_{attempt+1}", screenshots_dir); raise Exception("「サインイン」ボタン処理失敗")
+                except Exception as e_enter: print(f"   Enterキー送信中にエラー: {e_enter}"); save_screenshot(driver, f"login_signin_button_error_{attempt+1}", screenshots_dir); raise Exception("「サインイン」ボタン処理失敗")
 
             # ログイン後の検索ページURLまたは検索ボタンが表示されるまで待機
             WebDriverWait(driver, ELEMENT_WAIT_TIMEOUT + LONG_WAIT).until(EC.any_of(
@@ -708,7 +639,7 @@ def login(driver, email, password, screenshots_dir):
             print(f"[エラー] ログイン処理中にWebDriverエラー (試行 {attempt + 1}): {e}")
             save_screenshot(driver, f"login_webdriver_error_{attempt+1}", screenshots_dir)
             if "net::ERR" in str(e) or "connection reset" in str(e).lower(): # ネットワークエラーの可能性
-                print("  ネットワーク接続またはURLの問題、またはリモートホストによる切断の可能性があります。")
+                print("   ネットワーク接続またはURLの問題、またはリモートホストによる切断の可能性があります。")
             # 最終試行なら例外を再発生させて処理中断
             if attempt == max_login_attempts - 1:
                 raise e
@@ -824,9 +755,9 @@ def initialize_driver(driver_path, headless=False):
         error_message = str(e).lower()
         # 一般的な原因と対策を表示
         if "session not created" in error_message:
-            print("  原因: ChromeDriver と Chrome のバージョン不一致。対策: バージョンを確認し、対応するChromeDriverをDL/指定してください。")
+            print("   原因: ChromeDriver と Chrome のバージョン不一致。対策: バージョンを確認し、対応するChromeDriverをDL/指定してください。")
         elif "executable needs to be in path" in error_message:
-            print("  原因: ChromeDriver がPATH上にないか指定が誤り。対策: PATHを通すか、CHROME_DRIVER_PATHで指定してください。")
+            print("   原因: ChromeDriver がPATH上にないか指定が誤り。対策: PATHを通すか、CHROME_DRIVER_PATHで指定してください。")
         else:
             traceback.print_exc() # その他のエラーはトレースバック表示
         return None
@@ -837,7 +768,7 @@ def initialize_driver(driver_path, headless=False):
         return None
 
 
-# --- ★★★ メイン処理 (修正箇所あり) ★★★ ---
+# --- ★★★ メイン処理 (変更なし) ★★★ ---
 if __name__ == "__main__":
     # 出力ディレクトリ作成、開始時間記録、変数初期化
     output_dir, logs_dir, screenshots_dir = create_output_dirs(OUTPUT_DIR_NAME)
@@ -899,10 +830,10 @@ if __name__ == "__main__":
                 field_select_xpath = "//select[@name='KEYWORD_FLD1CD']"
                 field_select_element = WebDriverWait(driver, ELEMENT_WAIT_TIMEOUT).until(EC.presence_of_element_located((By.XPATH, field_select_xpath)))
                 if not select_option_by_text(driver, field_select_element, field_name):
-                    print(f"    [警告] 分野 '{field_name}' の選択に失敗。スキップします。")
+                    print(f"     [警告] 分野 '{field_name}' の選択に失敗。スキップします。")
                     save_screenshot(driver, f"field_selection_failed_{field_name}", screenshots_dir)
                     field_index += 1; continue # 次の分野へ
-                print(f"  分野 '{field_name}' を選択しました。")
+                print(f"   分野 '{field_name}' を選択しました。")
                 time.sleep(SHORT_WAIT) # 選択後の待機
 
                 # --- 年度ループ ---
@@ -921,7 +852,7 @@ if __name__ == "__main__":
                             if not login(driver, USER_EMAIL, USER_PASSWORD, screenshots_dir):
                                 print("[エラー] 再ログイン失敗。この年度をスキップします。")
                                 year_index += 1; continue # 次の年度へ
-                            print(f"  再ログイン成功。分野 '{field_name}' を再選択します...")
+                            print(f"   再ログイン成功。分野 '{field_name}' を再選択します...")
                             time.sleep(SHORT_WAIT)
                             if "gslbs.keio.jp/syllabus/search" not in driver.current_url:
                                 driver.get('https://gslbs.keio.jp/syllabus/search')
@@ -929,9 +860,9 @@ if __name__ == "__main__":
                                 time.sleep(MEDIUM_WAIT)
                             field_select_element = WebDriverWait(driver, ELEMENT_WAIT_TIMEOUT).until(EC.presence_of_element_located((By.XPATH, field_select_xpath)))
                             if not select_option_by_text(driver, field_select_element, field_name):
-                                print(f"    [警告] 再ログイン後の分野 '{field_name}' 再選択に失敗。この年度をスキップします。")
+                                print(f"     [警告] 再ログイン後の分野 '{field_name}' 再選択に失敗。この年度をスキップします。")
                                 year_index += 1; continue # 次の年度へ
-                            print(f"  分野 '{field_name}' を再選択しました。")
+                            print(f"   分野 '{field_name}' を再選択しました。")
                             time.sleep(SHORT_WAIT)
 
                         # --- 検索ページ確認・分野再選択 (必要なら) ---
@@ -944,9 +875,9 @@ if __name__ == "__main__":
                                 time.sleep(MEDIUM_WAIT)
                                 field_select_element = WebDriverWait(driver, ELEMENT_WAIT_TIMEOUT).until(EC.presence_of_element_located((By.XPATH, field_select_xpath)))
                                 if not select_option_by_text(driver, field_select_element, field_name):
-                                    print(f"    [警告] ページ移動後の分野 '{field_name}' 再選択に失敗。この年度をスキップします。")
+                                    print(f"     [警告] ページ移動後の分野 '{field_name}' 再選択に失敗。この年度をスキップします。")
                                     year_index += 1; continue
-                                print(f"  分野 '{field_name}' を再選択しました。")
+                                print(f"   分野 '{field_name}' を再選択しました。")
                                 time.sleep(SHORT_WAIT)
                         except WebDriverException as e_url_check_yr:
                              print(f"[警告] 現在のURL確認中にエラー(年度ループ): {e_url_check_yr}。セッションエラーとして処理します。")
@@ -957,10 +888,10 @@ if __name__ == "__main__":
                         year_select_xpath = "//select[@name='KEYWORD_TTBLYR']"
                         year_select_element = WebDriverWait(driver, ELEMENT_WAIT_TIMEOUT).until(EC.presence_of_element_located((By.XPATH, year_select_xpath)))
                         if not select_option_by_text(driver, year_select_element, str(year)):
-                            print(f"    [警告] 年度 '{year}' の選択に失敗。スキップします。")
+                            print(f"     [警告] 年度 '{year}' の選択に失敗。スキップします。")
                             save_screenshot(driver, f"year_selection_failed_{year}", screenshots_dir)
                             year_index += 1; continue # 次の年度へ
-                        print(f"  年度 '{year}' を選択しました。")
+                        print(f"   年度 '{year}' を選択しました。")
                         time.sleep(SHORT_WAIT)
 
                         # --- 学年チェックボックス処理 ---
@@ -968,34 +899,34 @@ if __name__ == "__main__":
                             cb_xpath = "//input[@name='KEYWORD_LVL' and @value='3']"
                             cb = WebDriverWait(driver, SHORT_WAIT).until(EC.presence_of_element_located((By.XPATH, cb_xpath)))
                             if cb.is_selected():
-                                print("  学年「3年」のチェックを外します。")
+                                print("   学年「3年」のチェックを外します。")
                                 if not click_element(driver, cb):
-                                    print("      [警告] 学年「3年」チェックボックス解除失敗。")
+                                    print("       [警告] 学年「3年」チェックボックス解除失敗。")
                                 time.sleep(0.5)
                         except TimeoutException: pass
-                        except Exception as e_cb: print(f"      学年チェックボックス処理エラー: {e_cb}")
+                        except Exception as e_cb: print(f"       学年チェックボックス処理エラー: {e_cb}")
 
                         # --- 検索実行 ---
                         search_xpath = "//button[@data-action_id='SYLLABUS_SEARCH_KEYWORD_EXECUTE'] | //button[contains(text(), '検索')]"
                         search_button = WebDriverWait(driver, ELEMENT_WAIT_TIMEOUT).until(EC.element_to_be_clickable((By.XPATH, search_xpath)))
-                        print("  検索ボタンをクリックします...")
+                        print("   検索ボタンをクリックします...")
                         if not click_element(driver, search_button):
-                            print("    [エラー] 検索ボタンクリック失敗。この年度をスキップします。")
+                            print("     [エラー] 検索ボタンクリック失敗。この年度をスキップします。")
                             save_screenshot(driver, f"search_button_click_failed_{year}", screenshots_dir)
                             year_index += 1; continue
 
                         # --- 結果表示待機 ---
                         result_indicator_xpath = "//a[contains(@class, 'syllabus-detail')] | //div[contains(text(), '該当するデータはありません')]"
-                        print("  検索結果表示待機中...")
+                        print("   検索結果表示待機中...")
                         WebDriverWait(driver, ELEMENT_WAIT_TIMEOUT).until(EC.presence_of_element_located((By.XPATH, result_indicator_xpath)))
                         time.sleep(SHORT_WAIT)
-                        print("  検索結果表示完了。")
+                        print("   検索結果表示完了。")
 
                         # --- 該当なしチェック ---
                         try:
                             no_result_element = driver.find_element(By.XPATH, "//div[contains(text(), '該当するデータはありません')]")
                             if no_result_element.is_displayed():
-                                print(f"  [情報] {year}年度、分野 '{field_name}' に該当データなし。")
+                                print(f"   [情報] {year}年度、分野 '{field_name}' に該当データなし。")
                                 year_index += 1; continue
                         except NoSuchElementException: pass
 
@@ -1003,29 +934,29 @@ if __name__ == "__main__":
                         try:
                             sort_xpath = "//select[@name='SEARCH_RESULT_NARABIJUN']"
                             sort_element = WebDriverWait(driver, MEDIUM_WAIT).until(EC.presence_of_element_located((By.XPATH, sort_xpath)))
-                            print("  ソート順を「科目名順」に変更試行...")
+                            print("   ソート順を「科目名順」に変更試行...")
                             if not select_option_by_text(driver, sort_element, "科目名順"):
                                 try:
                                     Select(sort_element).select_by_value("2")
-                                    print("    ソート順を Value='2' で選択しました。")
+                                    print("     ソート順を Value='2' で選択しました。")
                                     time.sleep(SHORT_WAIT)
                                 except Exception:
-                                     print(f"      [警告] Value='2'でのソート失敗。")
-                                     try:
-                                         driver.execute_script("arguments[0].value = '2'; arguments[0].dispatchEvent(new Event('change', { bubbles: true }));")
-                                         print("      JSでソート順 Value='2' を設定しました。")
-                                         time.sleep(SHORT_WAIT)
-                                     except Exception as e_js: print(f"      [警告] JSでのソートも失敗: {e_js}")
+                                    print(f"       [警告] Value='2'でのソート失敗。")
+                                    try:
+                                        driver.execute_script("arguments[0].value = '2'; arguments[0].dispatchEvent(new Event('change', { bubbles: true }));")
+                                        print("       JSでソート順 Value='2' を設定しました。")
+                                        time.sleep(SHORT_WAIT)
+                                    except Exception as e_js: print(f"       [警告] JSでのソートも失敗: {e_js}")
                             else:
-                                print("    ソート順を「科目名順」で選択しました。")
+                                print("     ソート順を「科目名順」で選択しました。")
                                 time.sleep(SHORT_WAIT)
                         except TimeoutException: pass
-                        except Exception as e_sort: print(f"  [警告] ソート設定エラー: {e_sort}")
+                        except Exception as e_sort: print(f"   [警告] ソート設定エラー: {e_sort}")
 
                         # --- ページネーションループ ---
                         current_page = 1
                         while True: # ページループ
-                            print(f"\n  --- {year}年度 / {field_name} / ページ {current_page} ---")
+                            print(f"\n   --- {year}年度 / {field_name} / ページ {current_page} ---")
                             if check_session_timeout(driver, screenshots_dir):
                                 print("ページネーション中にセッションタイムアウト検出。年度処理中断。")
                                 year_processed_successfully = False; break
@@ -1039,14 +970,14 @@ if __name__ == "__main__":
                                 urls_on_page = [link.get_attribute("href") for link in current_links if link.get_attribute("href")]
                                 urls_on_page = [url.strip() for url in urls_on_page if url]
                                 if not urls_on_page:
-                                    print("  [情報] このページに詳細リンクが見つかりません。")
+                                    print("   [情報] このページに詳細リンクが見つかりません。")
                                     break
-                                print(f"  ページ {current_page} で {len(urls_on_page)} 件のリンクを取得。")
+                                print(f"   ページ {current_page} で {len(urls_on_page)} 件のリンクを取得。")
                             except TimeoutException:
-                                print(f"    ページ {current_page} リンク待機タイムアウト。このページの処理をスキップします。")
+                                print(f"     ページ {current_page} リンク待機タイムアウト。このページの処理をスキップします。")
                                 break
                             except Exception as e:
-                                print(f"  [エラー] ページ {current_page} リンク取得エラー: {e}")
+                                print(f"   [エラー] ページ {current_page} リンク取得エラー: {e}")
                                 break
 
                             main_window = driver.current_window_handle
@@ -1057,7 +988,7 @@ if __name__ == "__main__":
                                 if syllabus_url in opened_links_this_year_field:
                                     continue
 
-                                print(f"\n    詳細処理 {index + 1}/{len(urls_on_page)}: {syllabus_url}")
+                                print(f"\n     詳細処理 {index + 1}/{len(urls_on_page)}: {syllabus_url}")
 
                                 # --- try...except...finally 構造 ---
                                 syllabus_details = None
@@ -1069,10 +1000,11 @@ if __name__ == "__main__":
                                     # --- 新しいタブで開く ---
                                     initial_handles = set(driver.window_handles)
                                     driver.execute_script(f"window.open('{syllabus_url}', '_blank');")
-                                    WebDriverWait(driver, MEDIUM_WAIT).until(lambda d: set(d.window_handles) - initial_handles)
+                                    # 新しいタブが開くまで待機 (ハンドル数が1増えるまで)
+                                    WebDriverWait(driver, MEDIUM_WAIT).until(lambda d: len(d.window_handles) == len(initial_handles) + 1)
                                     new_handle = list(set(driver.window_handles) - initial_handles)[0]
                                     driver.switch_to.window(new_handle)
-                                    time.sleep(SHORT_WAIT)
+                                    time.sleep(SHORT_WAIT) # 念のため待機
 
                                     # --- 詳細情報取得 ---
                                     syllabus_details = get_syllabus_details(driver, year, screenshots_dir)
@@ -1084,26 +1016,26 @@ if __name__ == "__main__":
                                         processed_count_on_page += 1
                                         course_name_log = syllabus_details['translations']['ja'].get('name', '名称不明')
                                         course_id_log = syllabus_details.get('course_id', 'ID不明')
-                                        print(f"      [成功] コース処理完了: {course_name_log} (ID: {course_id_log}, 年度: {year}, 分野: {field_name})")
+                                        print(f"       [成功] コース処理完了: {course_name_log} (ID: {course_id_log}, 年度: {year}, 分野: {field_name})")
                                     else:
-                                        print(f"    [警告] URL {syllabus_url} の詳細情報取得に失敗しました (get_syllabus_details returned None)。")
+                                        print(f"     [警告] URL {syllabus_url} の詳細情報取得に失敗しました (get_syllabus_details returned None)。")
 
                                 # --- 詳細ページ処理中のエラー ---
                                 except MissingCriticalDataError as e_critical:
                                     print(f"\n[!!!] データ欠落検出、緊急停止: {e_critical}")
                                     sys.exit(1) # finallyは実行される
                                 except TimeoutException as e_tab:
-                                    print(f"      [警告] 新タブ処理タイムアウトまたは詳細取得タイムアウト: {e_tab}。このURLをスキップします。")
+                                    print(f"       [警告] 新タブ処理タイムアウトまたは詳細取得タイムアウト: {e_tab}。このURLをスキップします。")
                                 except NoSuchWindowException as e_win:
-                                    print(f"    [エラー] ウィンドウ消失 ({e_win})。年度処理中断。")
+                                    print(f"     [エラー] ウィンドウ消失 ({e_win})。年度処理中断。")
                                     year_processed_successfully = False
                                     raise # finallyの後に再raise
                                 except (InvalidSessionIdException) as e_session:
-                                    print(f"    [エラー] セッションエラー ({e_session})。年度処理中断。")
+                                    print(f"     [エラー] セッションエラー ({e_session})。年度処理中断。")
                                     year_processed_successfully = False
                                     raise # finallyの後に再raise
                                 except Exception as e_detail:
-                                    print(f"      [エラー] 個別シラバス処理中エラー: {e_detail}")
+                                    print(f"       [エラー] 個別シラバス処理中エラー: {e_detail}")
                                     traceback.print_exc()
 
                                 finally:
@@ -1114,7 +1046,7 @@ if __name__ == "__main__":
                                             driver.close()
                                             time.sleep(0.2) # タブを閉じた後に少し待つ
                                         except NoSuchWindowException: pass # 既に閉じている場合は無視
-                                        except Exception as close_err: print(f"      [警告] タブ ({current_handle[-6:]}) 閉じエラー: {close_err}")
+                                        except Exception as close_err: print(f"       [警告] タブ ({current_handle[-6:]}) 閉じエラー: {close_err}")
 
                                     # メインウィンドウに戻る試行
                                     try:
@@ -1125,50 +1057,50 @@ if __name__ == "__main__":
                                         else:
                                             # メインウィンドウが見つからない場合
                                             if year_processed_successfully: # 他のエラーで既にFalseになっていなければ
-                                                print(f"  [致命的エラー] メインウィンドウ ({main_window[-6:]}) が消失。年度処理中断。")
+                                                print(f"   [致命的エラー] メインウィンドウ ({main_window[-6:]}) が消失。年度処理中断。")
                                                 year_processed_successfully = False # 失敗フラグを設定
                                             # ここで raise しない (finally 内での raise は推奨されない)
                                     except NoSuchWindowException:
                                         if year_processed_successfully:
-                                            print(f"  [致命的エラー] メインウィンドウ ({main_window[-6:]}) に戻れず (in finally)。年度処理中断。")
+                                            print(f"   [致命的エラー] メインウィンドウ ({main_window[-6:]}) に戻れず (in finally)。年度処理中断。")
                                             year_processed_successfully = False # 失敗フラグを設定
                                     except Exception as e_finally_switch:
                                          if year_processed_successfully:
-                                             print(f"  [エラー] finallyブロックでのウィンドウ切り替え中に予期せぬエラー: {e_finally_switch}")
+                                             print(f"   [エラー] finallyブロックでのウィンドウ切り替え中に予期せぬエラー: {e_finally_switch}")
                                              year_processed_successfully = False # 失敗フラグを設定
                                 # --- try...except...finally 終了 ---
 
                                 # 年度失敗フラグチェック
                                 if not year_processed_successfully:
-                                     print("  年度処理失敗フラグが検出されたため、詳細ループを中断します。")
-                                     break
+                                    print("   年度処理失敗フラグが検出されたため、詳細ループを中断します。")
+                                    break
                             # --- 詳細ループ終了 ---
 
                             # 年度失敗フラグチェック
                             if not year_processed_successfully:
-                                print("  年度処理失敗フラグが検出されたため、ページネーションループを中断します。")
+                                print("   年度処理失敗フラグが検出されたため、ページネーションループを中断します。")
                                 break
 
                             # --- 次ページ遷移 ---
                             try:
                                 next_xpath = "//li[not(contains(@class, 'disabled'))]/a[contains(text(), '次') or contains(., 'Next')]"
                                 next_button = WebDriverWait(driver, MEDIUM_WAIT).until(EC.element_to_be_clickable((By.XPATH, next_xpath)))
-                                print(f"\n  ページ {current_page} 処理完了 ({processed_count_on_page}件)。次ページへ移動します...")
+                                print(f"\n   ページ {current_page} 処理完了 ({processed_count_on_page}件)。次ページへ移動します...")
                                 if click_element(driver, next_button):
                                     current_page += 1
                                     WebDriverWait(driver, ELEMENT_WAIT_TIMEOUT).until(EC.presence_of_element_located((By.XPATH, result_indicator_xpath)))
                                     time.sleep(SHORT_WAIT)
                                 else:
-                                    print("    [警告] 次ページクリック失敗。ページネーション終了。")
+                                    print("     [警告] 次ページクリック失敗。ページネーション終了。")
                                     break
                             except TimeoutException:
-                                print(f"\n  ページ {current_page} 処理完了 ({processed_count_on_page}件)。最終ページと判断。")
+                                print(f"\n   ページ {current_page} 処理完了 ({processed_count_on_page}件)。最終ページと判断。")
                                 break
                             except StaleElementReferenceException:
-                                print("    [警告] 次ページボタンStale。ページネーション終了。")
+                                print("     [警告] 次ページボタンStale。ページネーション終了。")
                                 break
                             except Exception as e_page:
-                                print(f"  [エラー] ページネーションエラー: {e_page}")
+                                print(f"   [エラー] ページネーションエラー: {e_page}")
                                 break
                         # --- ページネーションループ終了 ---
 
@@ -1189,17 +1121,17 @@ if __name__ == "__main__":
                         continue # year_index変えず再試行
                     except Exception as e_year_main:
                          # その他の年度ループ中のエラー
-                        print(f"  [エラー] {year}年度処理中エラー: {e_year_main}")
+                        print(f"   [エラー] {year}年度処理中エラー: {e_year_main}")
                         traceback.print_exc()
                         # year_processed_successfully フラグが False になっているか確認
                         if not year_processed_successfully:
-                             print(f"  エラー発生のため年度 {year} 処理を中断します。")
-                             print("  この分野の処理を中断し、次の分野へ進みます。")
-                             break # 年度ループを抜ける (次の分野へ)
+                            print(f"   エラー発生のため年度 {year} 処理を中断します。")
+                            print("   この分野の処理を中断し、次の分野へ進みます。")
+                            break # 年度ループを抜ける (次の分野へ)
                         else:
-                             # try ブロック内で year_processed_successfully が False にならなかった場合の予期せぬエラー
-                             print(" この年度をスキップします。")
-                             year_index += 1 # 次の年度へ
+                            # try ブロック内で year_processed_successfully が False にならなかった場合の予期せぬエラー
+                            print(" この年度をスキップします。")
+                            year_index += 1 # 次の年度へ
                     else:
                         # 年度ループの try ブロックが正常終了した場合
                         if year_processed_successfully:
@@ -1228,14 +1160,14 @@ if __name__ == "__main__":
                 continue # field_index変えず再試行
             except Exception as e_field_main:
                  # その他の分野ループ中のエラー
-                print(f"  [エラー] 分野 '{field_name}' 処理中エラー: {e_field_main}")
+                print(f"   [エラー] 分野 '{field_name}' 処理中エラー: {e_field_main}")
                 traceback.print_exc()
                 print(" この分野をスキップします。")
                 field_index += 1 # 次の分野へ
             else:
                  # 分野ループの try ブロックが正常終了した場合
-                 print(f"===== 分野: {field_name} 正常終了 =====")
-                 field_index += 1 # 次の分野へ
+                print(f"===== 分野: {field_name} 正常終了 =====")
+                field_index += 1 # 次の分野へ
         # --- 分野ループ終了 ---
 
     # --- グローバル try/except/finally ---
@@ -1246,7 +1178,6 @@ if __name__ == "__main__":
     except Exception as e_global:
         print(f"\n★★★ 重大エラー発生、処理中断: {e_global} ★★★")
         traceback.print_exc()
-        # ★★★ ここから修正 ★★★
         if driver:
             print("重大エラー発生のため、スクリーンショットを試みます...")
             try:
@@ -1254,7 +1185,6 @@ if __name__ == "__main__":
             except Exception:
                  print("[警告] エラー発生後のスクリーンショット保存に失敗しました。")
                  pass # Ignore errors during final screenshot attempt
-        # ★★★ ここまで修正 ★★★
     finally:
         # --- 終了処理 ---
         if driver:
