@@ -23,8 +23,8 @@ from urllib.parse import urlparse, parse_qs, urlencode, urlunparse
 
 # --- グローバル変数・設定 ---
 CHROME_DRIVER_PATH = None # ChromeDriverのパス (Noneの場合は自動検出)
-USER_EMAIL = 'kaitosumishi@keio.jp' # ログインに使用するメールアドレス
-USER_PASSWORD = '0528QBSkaito' # ログインに使用するパスワード
+USER_EMAIL = 'Email' # ログインに使用するメールアドレス
+USER_PASSWORD = 'Password' # ログインに使用するパスワード
 OUTPUT_DIR_NAME = 'syllabus_output' # 出力ディレクトリ名
 OUTPUT_JSON_FILE = 'syllabus_data.json' # 出力JSONファイル名
 TARGET_FIELDS = ["基盤科目", "先端科目", "特設科目"] # スクレイピング対象の分野
@@ -290,7 +290,7 @@ def get_syllabus_details(driver, current_year, screenshots_dir):
             'professor': ("担当者名", "//tr[th[contains(text(),'担当者名')]]/td", ""), # 担当者名は空を許容する場合がある
             'credits': ("単位", "//tr[th[contains(text(),'単位')]]/td", "単位不明"),
             'field': ("分野", "//tr[th[contains(text(),'分野')]]/td", "分野不明"),
-            'location': ("教室", "//tr[th[contains(text(),'教室')]]/td", "教室不明"),
+            'location': ("教室", "//tr[th[contains(text(),'教室')]]/td", "教室不明"), # JSON出力時に 'Classroom' に変更
             'day_period': ("曜日時限", "//tr[th[contains(text(),'曜日時限')]]/td", "曜日時限不明"),
             # 説明文データ (XPathは日本語見出しに依存)
             'outline': ("講義概要", "//h3[contains(text(), '講義概要')]/following-sibling::div[@class='contents']", ""),
@@ -407,20 +407,26 @@ def get_syllabus_details(driver, current_year, screenshots_dir):
         'year_scraped': details_ja['year_scraped'],
         'translations': { 'ja': {}, 'en': {} } # 日本語と英語の情報を格納する辞書
     }
-    all_keys = list(info_map_ja.keys()) # info_map_ja に定義されている全キー
+    # ★★★ 修正: info_map_jaから不要なキーを除外 ★★★
+    # 'day_period' や詳細説明系のキーは最終出力のtranslationsには含めない場合がある
+    # ここでは一旦全てコピーし、aggregate_syllabus_dataで最終調整する方針
+    # all_keys = list(info_map_ja.keys())
+    all_keys_to_copy = ['name', 'semester', 'professor', 'credits', 'field', 'location', 'day_period',
+                       'outline', 'objectives', 'preparation', 'plan', 'grading', 'textbook', 'comments']
+
 
     # 日本語情報を final_details に設定
-    for key in all_keys:
+    for key in all_keys_to_copy:
         final_details['translations']['ja'][key] = details_ja.get(key, "")
 
     # 英語情報を final_details に設定 (優先度考慮)
-    for key in all_keys:
+    for key in all_keys_to_copy:
         ja_value = details_ja.get(key, "") # 対応する日本語の値
         en_value_to_set = ja_value # デフォルトは日本語の値をコピー
 
         # 優先1: 英語ページで再取得したテーブルデータを確認
         rerun_value = details_en_table_rerun.get(key)
-        if rerun_value: # 再取得データが存在する場合
+        if rerun_value and key in table_keys: # 再取得データが存在し、かつテーブルキーの場合
             is_plausibly_english = False # 英語らしい値かどうかのフラグ
             # キーに応じて英語らしく見えるか判定
             if key in ['name', 'professor', 'field', 'location']:
@@ -429,7 +435,7 @@ def get_syllabus_details(driver, current_year, screenshots_dir):
                     is_plausibly_english = True
             elif key == 'semester':
                  # "Spring", "Fall" などが含まれている場合
-                is_plausibly_english = any(eng_term in rerun_value for eng_term in ["Spring", "Fall", "Summer", "Winter", "Year"])
+                is_plausibly_english = any(eng_term.lower() in rerun_value.lower() for eng_term in ["Spring", "Fall", "Summer", "Winter", "Year"])
             elif key == 'day_period':
                  # "Mon", "Tue" などが含まれている場合
                 is_plausibly_english = any(eng_day in rerun_value for eng_day in ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"])
@@ -441,12 +447,16 @@ def get_syllabus_details(driver, current_year, screenshots_dir):
             if is_plausibly_english:
                 en_value_to_set = rerun_value # 英語らしい値を採用
 
-        # 優先2: 英語の説明文データを使用 (テーブルデータが英語でなかった場合)
-        # テーブルデータが日本語のまま、かつ英語の説明文データが存在する場合
-        if en_value_to_set == ja_value and key in details_en_desc:
+        # 優先2: 英語の説明文データを使用 (テーブルデータが英語でなかった場合、または説明文キーの場合)
+        if (en_value_to_set == ja_value and key in table_keys) or (key in description_keys):
             desc_value = details_en_desc.get(key)
-            if desc_value: # 英語説明文が取得できていれば採用
-                en_value_to_set = desc_value
+            if desc_value: # 英語説明文が取得できていれば採用 (テーブルデータの上書きも含む)
+                 # ★★★ 追加チェック: 説明文キーでも、日本語と全く同じなら採用しない方が良い場合も？
+                 # 例えば概要(outline)などが日本語のままコピーされているケース
+                 if key in description_keys and desc_value == ja_value and re.search(r'[ぁ-んァ-ン一-龯]', desc_value):
+                      pass # 日本語と同一で日本語文字が含まれる場合は、コピーされただけとみなし採用しない
+                 else:
+                    en_value_to_set = desc_value
 
         # 優先3: 日本語からの変換を試行 (上記で英語値が設定されなかった場合)
         if en_value_to_set == ja_value: # まだ日本語の値のままの場合
@@ -481,10 +491,10 @@ def get_syllabus_details(driver, current_year, screenshots_dir):
     return final_details
 
 
-# --- aggregate_syllabus_data 関数 (変更なし) ---
+# --- ★★★ aggregate_syllabus_data 関数の修正 ★★★ ---
 def aggregate_syllabus_data(all_raw_data):
     """
-    複数年度にわたる生データを集約し、最終的なJSON形式に整形する。
+    複数年度にわたる生データを集約し、指定されたJSON形式に整形する。
     course_id, professor_ja, semester (英語優先) をキーとしてデータをグループ化。
     """
     if not all_raw_data: return [] # データがなければ空リストを返す
@@ -519,20 +529,83 @@ def aggregate_syllabus_data(all_raw_data):
         # 同じキーのデータは年度(year_scraped)で降順ソート (最新年度を先頭に)
         year_data_list.sort(key=lambda x: x['year_scraped'], reverse=True)
         latest_data = year_data_list[0] # 最新年度のデータを代表として使用
-        # スクレイピングされた全年度をリストアップ
-        years_scraped = sorted(list(set(d['year_scraped'] for d in year_data_list)))
+        # スクレイピングされた全年度をリストアップ (整数)
+        years_scraped_int = sorted(list(set(d['year_scraped'] for d in year_data_list)))
+        # ★★★ 修正: available_years (文字列リスト) を作成 ★★★
+        available_years_str = [str(y) for y in years_scraped_int]
 
-        # 最新データの情報を元に集約後のアイテムを作成
+        # --- ★★★ 修正: 指定されたJSON形式に合わせてデータを構築 ★★★ ---
+
+        # translations オブジェクトを準備
+        trans_ja = latest_data.get('translations', {}).get('ja', {})
+        trans_en = latest_data.get('translations', {}).get('en', {})
+
+        # 教室情報 (英語優先)
+        classroom_en = trans_en.get('location', '')
+        classroom_ja = trans_ja.get('location', '')
+        classroom = classroom_en if classroom_en else classroom_ja
+
+        # 学期情報 (英語優先、小文字化)
+        semester_en = trans_en.get('semester', '')
+        semester_ja = trans_ja.get('semester', 'unknown') # 日本語も取得しておく
+        semester = (semester_en if semester_en else semester_ja).lower()
+
+        # professors リストを作成
+        professors_list = []
+        prof_ja_raw = trans_ja.get('professor', '')
+        prof_en_raw = trans_en.get('professor', '')
+        dept_ja = trans_ja.get('field', '')
+        dept_en = trans_en.get('field', '')
+
+        prof_ja_names = [name.strip() for name in prof_ja_raw.split('/') if name.strip()] if prof_ja_raw else []
+        prof_en_names = [name.strip() for name in prof_en_raw.split('/') if name.strip()] if prof_en_raw else []
+
+        max_len = max(len(prof_ja_names), len(prof_en_names))
+        for i in range(max_len):
+            prof_obj = {
+                "name": {
+                    "ja": prof_ja_names[i] if i < len(prof_ja_names) else "",
+                    "en": prof_en_names[i] if i < len(prof_en_names) else ""
+                },
+                "department": {
+                    "ja": dept_ja,
+                    "en": dept_en
+                }
+            }
+            if prof_obj["name"]["ja"] or prof_obj["name"]["en"]:
+                professors_list.append(prof_obj)
+
+        # 最終的なアイテムを作成
         aggregated_item = {
             "course_id": latest_data['course_id'],
-            "year": "、".join(map(str, years_scraped)), # スクレイピングされた年度をカンマ区切り文字列に
-            "semester": latest_data.get('semester', 'unknown'), # トップレベルの学期 (最新年度のもの)
-            "day_period": latest_data.get('day_period', 'unknown'), # トップレベルの曜日時限 (最新年度のもの)
-            "professor_ja": latest_data.get('professor_ja', ''), # トップレベルの日本語教授名 (最新年度のもの)
+            # ★★★ 修正: year を '&' 区切り文字列に ★★★
+            "year": "&".join(available_years_str),
+            # ★★★ 修正: semester を小文字に ★★★
+            "semester": semester,
+             # ★★★ 追加: classroom フィールド ★★★
+            "classroom": classroom,
             "translations": {
-                "ja": latest_data.get('translations', {}).get('ja', {}), # 最新年度の日本語情報
-                "en": latest_data.get('translations', {}).get('en', {})  # 最新年度の英語情報
-            }
+                "ja": {
+                    # ★★★ 修正: 必要なキーのみ選択、キー名を変更 ★★★
+                    "name": trans_ja.get('name', ''),
+                    "field": trans_ja.get('field', ''),
+                    "credits": trans_ja.get('credits', ''),
+                    "semester": trans_ja.get('semester', ''), # 日本語の学期も保持
+                    "Classroom": trans_ja.get('location', '') # キー名を変更
+                },
+                "en": {
+                     # ★★★ 修正: 必要なキーのみ選択、キー名を変更、semesterを小文字に ★★★
+                    "name": trans_en.get('name', ''),
+                    "field": trans_en.get('field', ''),
+                    "credits": trans_en.get('credits', ''),
+                    "semester": semester_en.lower() if semester_en else '', # 英語の学期を小文字で保持
+                    "Classroom": trans_en.get('location', '') # キー名を変更
+                }
+            },
+             # ★★★ 追加: professors リスト ★★★
+            "professors": professors_list,
+             # ★★★ 追加: available_years リスト ★★★
+            "available_years": available_years_str
         }
         final_list.append(aggregated_item)
     return final_list
@@ -810,9 +883,6 @@ if __name__ == "__main__":
                         field_index += 1; continue # 次の分野へ
 
                 # --- 検索ページ確認・移動 ---
-                # ★★★ 修正: セッションチェック後にURLを確認 ★★★
-                # check_session_timeout内でNoSuchWindowExceptionが発生する可能性があるため、
-                # driverオブジェクトが有効か確認してからcurrent_urlにアクセスする
                 try:
                     current_url_check = driver.current_url
                     if "gslbs.keio.jp/syllabus/search" not in current_url_check:
@@ -821,9 +891,7 @@ if __name__ == "__main__":
                         WebDriverWait(driver, ELEMENT_WAIT_TIMEOUT).until(EC.url_contains("gslbs.keio.jp/syllabus/search"))
                         time.sleep(MEDIUM_WAIT) # ページ遷移後の待機
                 except WebDriverException as e_url_check:
-                    # current_urlアクセス時にエラーが発生した場合 (ウィンドウが閉じているなど)
                     print(f"[警告] 現在のURL確認中にエラー: {e_url_check}。セッションエラーとして処理します。")
-                    # セッションエラーと同様にWebDriver再起動を試みる
                     raise InvalidSessionIdException("URL check failed, likely closed window.") from e_url_check
 
 
@@ -867,7 +935,6 @@ if __name__ == "__main__":
                             time.sleep(SHORT_WAIT)
 
                         # --- 検索ページ確認・分野再選択 (必要なら) ---
-                        # ★★★ 修正: URL確認のWebDriverExceptionハンドリング追加 ★★★
                         try:
                             current_url_check_yr = driver.current_url
                             if "gslbs.keio.jp/syllabus/search" not in current_url_check_yr:
@@ -1041,7 +1108,6 @@ if __name__ == "__main__":
 
                                 finally:
                                     # --- タブ閉じ＆メインウィンドウ戻り ---
-                                    # ★★★ 修正: 安定性向上のため待機追加＆エラーハンドリング調整 ★★★
                                     current_handle = driver.current_window_handle
                                     if current_handle != main_window:
                                         try:
