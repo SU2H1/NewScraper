@@ -75,7 +75,12 @@ def save_screenshot(driver, prefix="screenshot", dir_path="screenshots"):
         print("[警告] スクリーンショット保存試行中にInvalidSessionIdExceptionが発生しました。")
         return None
     except WebDriverException as e:
-        print(f"[エラー] スクリーンショットの保存に失敗: {e}")
+        # Handle specific WebDriver exceptions if necessary
+        if "target window already closed" in str(e).lower():
+             print("[警告] スクリーンショット保存試行中にウィンドウが閉じられました。")
+        else:
+             print(f"[エラー] スクリーンショットの保存に失敗: {e}")
+        return None
     except Exception as e:
         print(f"[エラー] スクリーンショット保存中に予期せぬエラー: {e}")
     return None
@@ -102,7 +107,7 @@ def click_element(driver, element, wait_time=SHORT_WAIT):
         # 要素がクリック可能になるまで待機
         WebDriverWait(driver, wait_time).until(EC.element_to_be_clickable(element))
         element.click() # クリック実行
-        time.sleep(0.3) # クリック後の短い待機
+        time.sleep(0.5) # クリック後の少し長めの待機 (ページの反応を待つ)
         return True
     except ElementClickInterceptedException:
         # 通常のクリックが妨害された場合、JavaScriptでクリックを試みる
@@ -112,7 +117,7 @@ def click_element(driver, element, wait_time=SHORT_WAIT):
             time.sleep(0.3)
             # JavaScriptでクリック実行
             driver.execute_script("arguments[0].click();", element)
-            time.sleep(0.3)
+            time.sleep(0.5) # JSクリック後も少し待つ
             return True
         except Exception as js_e:
             print(f"        JavaScript Click中にエラー: {js_e}")
@@ -396,8 +401,12 @@ def get_syllabus_details(driver, current_year, screenshots_dir):
             elif key == 'day_period':
                 is_plausibly_english = any(eng_day in rerun_value for eng_day in ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"])
             elif key == 'credits':
-                if rerun_value != ja_value or re.fullmatch(r'[\d.]+', rerun_value):
-                    is_plausibly_english = True
+                # 単位は数字や英語("Unit")を含むか、日本語と異なる場合に英語とみなす
+                if (re.search(r'\d', rerun_value) and re.search(r'[a-zA-Z]', rerun_value)) or \
+                   re.fullmatch(r'[\d.]+', rerun_value) or \
+                   (rerun_value != ja_value and re.search(r'[a-zA-Z]', rerun_value)):
+                     is_plausibly_english = True
+
 
             if is_plausibly_english:
                 en_value_to_set = rerun_value # 英語らしい値を採用
@@ -468,15 +477,12 @@ def aggregate_syllabus_data(all_raw_data):
         # 学期情報 (英語優先、小文字化)
         semester_en = trans_en.get('semester', '')
         semester_ja = trans_ja.get('semester', 'unknown')
-        semester_final = (semester_en if semester_en else semester_ja).lower()
-        # "unknown" などはそのまま小文字にする
+        # 英語の値があればそれを優先、なければ日本語の値を使う
+        semester_combined = semester_en if semester_en else semester_ja
+        # 小文字化し、不明な値は 'unknown' に統一
+        semester_final = semester_combined.lower()
         if semester_final in ["学期不明", "不明"]: semester_final = "unknown"
 
-
-        # 教室情報 (英語優先) - これは最終JSONには含めないが、必要なら追加
-        # classroom_en = trans_en.get('location', '')
-        # classroom_ja = trans_ja.get('location', '')
-        # classroom_final = classroom_en if classroom_en else classroom_ja
 
         # professors リストを作成
         professors_list = []
@@ -768,7 +774,7 @@ def initialize_driver(driver_path, headless=False):
         return None
 
 
-# --- ★★★ メイン処理 (変更なし) ★★★ ---
+# --- ★★★ メイン処理 (ページネーションロジック修正) ★★★ ---
 if __name__ == "__main__":
     # 出力ディレクトリ作成、開始時間記録、変数初期化
     output_dir, logs_dir, screenshots_dir = create_output_dirs(OUTPUT_DIR_NAME)
@@ -916,7 +922,7 @@ if __name__ == "__main__":
                             year_index += 1; continue
 
                         # --- 結果表示待機 ---
-                        result_indicator_xpath = "//a[contains(@class, 'syllabus-detail')] | //div[contains(text(), '該当するデータはありません')]"
+                        result_indicator_xpath = "//a[contains(@class, 'syllabus-detail')] | //div[contains(text(), '該当するデータはありません')] | //ul[contains(@class, 'pagination')]" # ページネーションも待機対象に
                         print("   検索結果表示待機中...")
                         WebDriverWait(driver, ELEMENT_WAIT_TIMEOUT).until(EC.presence_of_element_located((By.XPATH, result_indicator_xpath)))
                         time.sleep(SHORT_WAIT)
@@ -953,166 +959,302 @@ if __name__ == "__main__":
                         except TimeoutException: pass
                         except Exception as e_sort: print(f"   [警告] ソート設定エラー: {e_sort}")
 
-                        # --- ページネーションループ ---
-                        current_page = 1
-                        while True: # ページループ
-                            print(f"\n   --- {year}年度 / {field_name} / ページ {current_page} ---")
-                            if check_session_timeout(driver, screenshots_dir):
-                                print("ページネーション中にセッションタイムアウト検出。年度処理中断。")
-                                year_processed_successfully = False; break
+                        # --- ★★★ 修正: ページネーションループ (ページ番号優先) ★★★ ---
+                        last_processed_page_num = 0 # この年度/分野で処理した最後のページ番号
+                        while True: # ページネーションブロックを処理するループ
+                            print(f"\n   --- ページネーションブロック処理開始 (最終処理ページ: {last_processed_page_num}) ---")
+                            pagination_processed_in_block = False # このブロックで何らかの処理が行われたか
+                            current_page_links_processed = set() # このブロック内で処理したページ番号
 
-                            # --- リンク取得 ---
-                            syllabus_link_xpath = "//a[contains(@class, 'syllabus-detail')]"
-                            urls_on_page = []
+                            # --- 1. 現在表示されているページ番号リンクを取得 ---
+                            page_number_elements_info = []
                             try:
-                                WebDriverWait(driver, ELEMENT_WAIT_TIMEOUT).until(EC.presence_of_element_located((By.XPATH, syllabus_link_xpath)))
-                                current_links = driver.find_elements(By.XPATH, syllabus_link_xpath)
-                                urls_on_page = [link.get_attribute("href") for link in current_links if link.get_attribute("href")]
-                                urls_on_page = [url.strip() for url in urls_on_page if url]
-                                if not urls_on_page:
-                                    print("   [情報] このページに詳細リンクが見つかりません。")
-                                    break
-                                print(f"   ページ {current_page} で {len(urls_on_page)} 件のリンクを取得。")
-                            except TimeoutException:
-                                print(f"     ページ {current_page} リンク待機タイムアウト。このページの処理をスキップします。")
-                                break
-                            except Exception as e:
-                                print(f"   [エラー] ページ {current_page} リンク取得エラー: {e}")
-                                break
+                                # pagination要素全体を再検索してStale対策
+                                pagination_container = WebDriverWait(driver, MEDIUM_WAIT).until(
+                                    EC.presence_of_element_located((By.XPATH, "//ul[contains(@class, 'pagination')]"))
+                                )
+                                # アクティブなページ番号を取得
+                                try:
+                                     active_page_element = pagination_container.find_element(By.XPATH, ".//li[contains(@class, 'active')]/span | .//li[contains(@class, 'active')]/a")
+                                     current_active_page_num = int(normalize_text(active_page_element.text))
+                                     print(f"     現在のアクティブページ: {current_active_page_num}")
+                                     # 最初のページ(1)または「次へ」で遷移した直後のページを処理
+                                     if current_active_page_num > last_processed_page_num and current_active_page_num not in current_page_links_processed:
+                                         print(f"     ページ {current_active_page_num} を処理します...")
+                                         # --- リンク取得と詳細処理 ---
+                                         syllabus_link_xpath = "//a[contains(@class, 'syllabus-detail')]"
+                                         urls_on_page = []
+                                         processed_count_on_page = 0
+                                         try:
+                                             WebDriverWait(driver, ELEMENT_WAIT_TIMEOUT).until(EC.presence_of_element_located((By.XPATH, syllabus_link_xpath)))
+                                             current_links = driver.find_elements(By.XPATH, syllabus_link_xpath)
+                                             urls_on_page = [link.get_attribute("href") for link in current_links if link.get_attribute("href")]
+                                             urls_on_page = [url.strip() for url in urls_on_page if url]
+                                             print(f"     ページ {current_active_page_num} で {len(urls_on_page)} 件のリンクを取得。")
 
-                            main_window = driver.current_window_handle
-                            processed_count_on_page = 0
+                                             main_window = driver.current_window_handle
+                                             for index, syllabus_url in enumerate(urls_on_page):
+                                                 if syllabus_url in opened_links_this_year_field: continue
+                                                 print(f"\n       詳細処理 {index + 1}/{len(urls_on_page)}: {syllabus_url}")
+                                                 syllabus_details = None
+                                                 try:
+                                                     if check_session_timeout(driver, screenshots_dir): raise InvalidSessionIdException("Session timeout before detail fetch")
+                                                     initial_handles = set(driver.window_handles)
+                                                     driver.execute_script(f"window.open('{syllabus_url}', '_blank');")
+                                                     WebDriverWait(driver, MEDIUM_WAIT).until(lambda d: len(d.window_handles) == len(initial_handles) + 1)
+                                                     new_handle = list(set(driver.window_handles) - initial_handles)[0]
+                                                     driver.switch_to.window(new_handle)
+                                                     time.sleep(SHORT_WAIT)
+                                                     syllabus_details = get_syllabus_details(driver, year, screenshots_dir)
+                                                     if syllabus_details:
+                                                         scraped_data_all_years.append(syllabus_details)
+                                                         opened_links_this_year_field.add(syllabus_url)
+                                                         processed_count_on_page += 1
+                                                     else:
+                                                         print(f"       [警告] URL {syllabus_url} の詳細情報取得失敗。")
+                                                 except Exception as e_detail: raise e_detail # Propagate detail processing errors
+                                                 finally:
+                                                     current_handle = driver.current_window_handle
+                                                     if current_handle != main_window:
+                                                         try: driver.close()
+                                                         except Exception: pass
+                                                     try:
+                                                          if main_window in driver.window_handles: driver.switch_to.window(main_window)
+                                                          else: raise NoSuchWindowException("Main window lost")
+                                                     except Exception as e_switch: raise e_switch # Propagate switch errors
+                                                 time.sleep(0.5) # Wait a bit after closing tab and switching back
 
-                            # --- 詳細ページ処理ループ ---
-                            for index, syllabus_url in enumerate(urls_on_page):
-                                if syllabus_url in opened_links_this_year_field:
-                                    continue
+                                         except (TimeoutException, StaleElementReferenceException) as e_link:
+                                             print(f"     [警告] ページ {current_active_page_num} のリンク取得/処理中にエラー: {e_link}")
+                                         except (InvalidSessionIdException, NoSuchWindowException) as e_session_detail:
+                                              print(f"     [エラー] 詳細処理中にセッション/ウィンドウエラー: {e_session_detail}")
+                                              year_processed_successfully = False; break # Exit inner link loop and outer pagination loop
+                                         except Exception as e_detail_proc:
+                                              print(f"     [エラー] ページ {current_active_page_num} の詳細処理中に予期せぬエラー: {e_detail_proc}")
+                                              traceback.print_exc()
+                                              year_processed_successfully = False; break # Exit inner link loop and outer pagination loop
+                                         # --- 詳細処理ループ終了 ---
+                                         if not year_processed_successfully: break # Exit pagination loop if detail processing failed
 
-                                print(f"\n     詳細処理 {index + 1}/{len(urls_on_page)}: {syllabus_url}")
+                                         last_processed_page_num = current_active_page_num
+                                         current_page_links_processed.add(current_active_page_num)
+                                         pagination_processed_in_block = True
 
-                                # --- try...except...finally 構造 ---
-                                syllabus_details = None
-                                try: # 詳細ページ処理 try
-                                    if check_session_timeout(driver, screenshots_dir):
-                                        print("詳細情報取得直前にセッションタイムアウト検出。年度処理中断。")
-                                        year_processed_successfully = False; break
+                                except (NoSuchElementException, ValueError) as e_active:
+                                     print(f"     アクティブページ番号の取得に失敗: {e_active}")
+                                     # If it's the first time (last_processed_page_num == 0), assume page 1
+                                     if last_processed_page_num == 0:
+                                         print("     最初のページ(1)として処理を試みます...")
+                                         current_active_page_num = 1
+                                         # --- リンク取得と詳細処理 (上記と同様のコードをここに展開) ---
+                                         syllabus_link_xpath = "//a[contains(@class, 'syllabus-detail')]"
+                                         urls_on_page = []
+                                         processed_count_on_page = 0
+                                         try:
+                                             WebDriverWait(driver, ELEMENT_WAIT_TIMEOUT).until(EC.presence_of_element_located((By.XPATH, syllabus_link_xpath)))
+                                             current_links = driver.find_elements(By.XPATH, syllabus_link_xpath)
+                                             urls_on_page = [link.get_attribute("href") for link in current_links if link.get_attribute("href")]
+                                             urls_on_page = [url.strip() for url in urls_on_page if url]
+                                             print(f"     ページ {current_active_page_num} で {len(urls_on_page)} 件のリンクを取得。")
 
-                                    # --- 新しいタブで開く ---
-                                    initial_handles = set(driver.window_handles)
-                                    driver.execute_script(f"window.open('{syllabus_url}', '_blank');")
-                                    # 新しいタブが開くまで待機 (ハンドル数が1増えるまで)
-                                    WebDriverWait(driver, MEDIUM_WAIT).until(lambda d: len(d.window_handles) == len(initial_handles) + 1)
-                                    new_handle = list(set(driver.window_handles) - initial_handles)[0]
-                                    driver.switch_to.window(new_handle)
-                                    time.sleep(SHORT_WAIT) # 念のため待機
+                                             main_window = driver.current_window_handle
+                                             for index, syllabus_url in enumerate(urls_on_page):
+                                                 if syllabus_url in opened_links_this_year_field: continue
+                                                 print(f"\n       詳細処理 {index + 1}/{len(urls_on_page)}: {syllabus_url}")
+                                                 syllabus_details = None
+                                                 try:
+                                                     if check_session_timeout(driver, screenshots_dir): raise InvalidSessionIdException("Session timeout before detail fetch")
+                                                     initial_handles = set(driver.window_handles)
+                                                     driver.execute_script(f"window.open('{syllabus_url}', '_blank');")
+                                                     WebDriverWait(driver, MEDIUM_WAIT).until(lambda d: len(d.window_handles) == len(initial_handles) + 1)
+                                                     new_handle = list(set(driver.window_handles) - initial_handles)[0]
+                                                     driver.switch_to.window(new_handle)
+                                                     time.sleep(SHORT_WAIT)
+                                                     syllabus_details = get_syllabus_details(driver, year, screenshots_dir)
+                                                     if syllabus_details:
+                                                         scraped_data_all_years.append(syllabus_details)
+                                                         opened_links_this_year_field.add(syllabus_url)
+                                                         processed_count_on_page += 1
+                                                     else:
+                                                         print(f"       [警告] URL {syllabus_url} の詳細情報取得失敗。")
+                                                 except Exception as e_detail: raise e_detail # Propagate detail processing errors
+                                                 finally:
+                                                     current_handle = driver.current_window_handle
+                                                     if current_handle != main_window:
+                                                         try: driver.close()
+                                                         except Exception: pass
+                                                     try:
+                                                          if main_window in driver.window_handles: driver.switch_to.window(main_window)
+                                                          else: raise NoSuchWindowException("Main window lost")
+                                                     except Exception as e_switch: raise e_switch # Propagate switch errors
+                                                 time.sleep(0.5) # Wait a bit after closing tab and switching back
 
-                                    # --- 詳細情報取得 ---
-                                    syllabus_details = get_syllabus_details(driver, year, screenshots_dir)
+                                         except (TimeoutException, StaleElementReferenceException) as e_link:
+                                             print(f"     [警告] ページ {current_active_page_num} のリンク取得/処理中にエラー: {e_link}")
+                                         except (InvalidSessionIdException, NoSuchWindowException) as e_session_detail:
+                                              print(f"     [エラー] 詳細処理中にセッション/ウィンドウエラー: {e_session_detail}")
+                                              year_processed_successfully = False; break # Exit inner link loop and outer pagination loop
+                                         except Exception as e_detail_proc:
+                                              print(f"     [エラー] ページ {current_active_page_num} の詳細処理中に予期せぬエラー: {e_detail_proc}")
+                                              traceback.print_exc()
+                                              year_processed_successfully = False; break # Exit inner link loop and outer pagination loop
+                                         # --- 詳細処理ループ終了 ---
+                                         if not year_processed_successfully: break # Exit pagination loop if detail processing failed
 
-                                    # --- 取得結果処理 ---
-                                    if syllabus_details:
-                                        scraped_data_all_years.append(syllabus_details)
-                                        opened_links_this_year_field.add(syllabus_url)
-                                        processed_count_on_page += 1
-                                        course_name_log = syllabus_details['translations']['ja'].get('name', '名称不明')
-                                        course_id_log = syllabus_details.get('course_id', 'ID不明')
-                                        print(f"       [成功] コース処理完了: {course_name_log} (ID: {course_id_log}, 年度: {year}, 分野: {field_name})")
-                                    else:
-                                        print(f"     [警告] URL {syllabus_url} の詳細情報取得に失敗しました (get_syllabus_details returned None)。")
+                                         last_processed_page_num = current_active_page_num
+                                         current_page_links_processed.add(current_active_page_num)
+                                         pagination_processed_in_block = True
+                                     else:
+                                         # アクティブページ取得失敗かつ初回でない場合は処理中断
+                                         print("     [エラー] アクティブページを特定できず、処理を続行できません。")
+                                         year_processed_successfully = False; break
 
-                                # --- 詳細ページ処理中のエラー ---
-                                except MissingCriticalDataError as e_critical:
-                                    print(f"\n[!!!] データ欠落検出、緊急停止: {e_critical}")
-                                    sys.exit(1) # finallyは実行される
-                                except TimeoutException as e_tab:
-                                    print(f"       [警告] 新タブ処理タイムアウトまたは詳細取得タイムアウト: {e_tab}。このURLをスキップします。")
-                                except NoSuchWindowException as e_win:
-                                    print(f"     [エラー] ウィンドウ消失 ({e_win})。年度処理中断。")
-                                    year_processed_successfully = False
-                                    raise # finallyの後に再raise
-                                except (InvalidSessionIdException) as e_session:
-                                    print(f"     [エラー] セッションエラー ({e_session})。年度処理中断。")
-                                    year_processed_successfully = False
-                                    raise # finallyの後に再raise
-                                except Exception as e_detail:
-                                    print(f"       [エラー] 個別シラバス処理中エラー: {e_detail}")
-                                    traceback.print_exc()
+                                # アクティブページ処理後、年度処理失敗ならループ中断
+                                if not year_processed_successfully: break
 
-                                finally:
-                                    # --- タブ閉じ＆メインウィンドウ戻り ---
-                                    current_handle = driver.current_window_handle
-                                    if current_handle != main_window:
-                                        try:
-                                            driver.close()
-                                            time.sleep(0.2) # タブを閉じた後に少し待つ
-                                        except NoSuchWindowException: pass # 既に閉じている場合は無視
-                                        except Exception as close_err: print(f"       [警告] タブ ({current_handle[-6:]}) 閉じエラー: {close_err}")
+                                # クリック可能なページ番号リンクを取得 (アクティブと無効を除く数字リンク)
+                                page_number_links_xpath = ".//li[not(contains(@class, 'active')) and not(contains(@class, 'disabled'))]/a[number(text()) = number(text())]"
+                                page_number_elements = pagination_container.find_elements(By.XPATH, page_number_links_xpath)
 
-                                    # メインウィンドウに戻る試行
+                                for link_element in page_number_elements:
                                     try:
-                                        if main_window in driver.window_handles:
-                                            if driver.current_window_handle != main_window:
-                                                driver.switch_to.window(main_window)
-                                                time.sleep(0.5) # ウィンドウ切り替え後に少し待つ
-                                        else:
-                                            # メインウィンドウが見つからない場合
-                                            if year_processed_successfully: # 他のエラーで既にFalseになっていなければ
-                                                print(f"   [致命的エラー] メインウィンドウ ({main_window[-6:]}) が消失。年度処理中断。")
-                                                year_processed_successfully = False # 失敗フラグを設定
-                                            # ここで raise しない (finally 内での raise は推奨されない)
-                                    except NoSuchWindowException:
-                                        if year_processed_successfully:
-                                            print(f"   [致命的エラー] メインウィンドウ ({main_window[-6:]}) に戻れず (in finally)。年度処理中断。")
-                                            year_processed_successfully = False # 失敗フラグを設定
-                                    except Exception as e_finally_switch:
-                                         if year_processed_successfully:
-                                             print(f"   [エラー] finallyブロックでのウィンドウ切り替え中に予期せぬエラー: {e_finally_switch}")
-                                             year_processed_successfully = False # 失敗フラグを設定
-                                # --- try...except...finally 終了 ---
+                                        page_num_text = normalize_text(link_element.text)
+                                        page_num = int(page_num_text)
+                                        # まだ処理していないページ番号のみを対象
+                                        if page_num > last_processed_page_num and page_num not in current_page_links_processed:
+                                            page_number_elements_info.append((page_num, link_element))
+                                    except (ValueError, StaleElementReferenceException):
+                                        continue # 数字でないか、要素が古くなった場合は無視
 
-                                # 年度失敗フラグチェック
-                                if not year_processed_successfully:
-                                    print("   年度処理失敗フラグが検出されたため、詳細ループを中断します。")
-                                    break
-                            # --- 詳細ループ終了 ---
+                            except (NoSuchElementException, TimeoutException) as e_paginate_find:
+                                print(f"     [警告] ページネーション要素の取得に失敗: {e_paginate_find}。この年度の処理を終了します。")
+                                break # ページネーションループを抜ける
 
-                            # 年度失敗フラグチェック
-                            if not year_processed_successfully:
-                                print("   年度処理失敗フラグが検出されたため、ページネーションループを中断します。")
-                                break
+                            # ページ番号順にソート
+                            page_number_elements_info.sort(key=lambda x: x[0])
 
-                            # --- 次ページ遷移 ---
+                            # --- 2. 取得したページ番号リンクを順番にクリックして処理 ---
+                            for page_num, link_element in page_number_elements_info:
+                                print(f"     ページ {page_num} への遷移を試みます...")
+                                try:
+                                    # クリック直前に要素を再検索してStale対策
+                                    link_to_click = WebDriverWait(driver, SHORT_WAIT).until(
+                                        EC.element_to_be_clickable((By.XPATH, f"//ul[contains(@class, 'pagination')]//li/a[text()='{page_num}']"))
+                                    )
+                                    if click_element(driver, link_to_click):
+                                        print(f"     ページ {page_num} へ遷移。結果待機中...")
+                                        WebDriverWait(driver, ELEMENT_WAIT_TIMEOUT).until(EC.presence_of_element_located((By.XPATH, result_indicator_xpath)))
+                                        time.sleep(MEDIUM_WAIT) # ページ内容とページネーションの描画を待つ
+                                        print(f"     ページ {page_num} を処理します...")
+
+                                        # --- リンク取得と詳細処理 ---
+                                        syllabus_link_xpath = "//a[contains(@class, 'syllabus-detail')]"
+                                        urls_on_page = []
+                                        processed_count_on_page = 0
+                                        try:
+                                            # リンクが表示されるまで少し待つ
+                                            WebDriverWait(driver, MEDIUM_WAIT).until(EC.presence_of_element_located((By.XPATH, syllabus_link_xpath)))
+                                            current_links = driver.find_elements(By.XPATH, syllabus_link_xpath)
+                                            urls_on_page = [link.get_attribute("href") for link in current_links if link.get_attribute("href")]
+                                            urls_on_page = [url.strip() for url in urls_on_page if url]
+                                            print(f"     ページ {page_num} で {len(urls_on_page)} 件のリンクを取得。")
+
+                                            main_window = driver.current_window_handle
+                                            for index, syllabus_url in enumerate(urls_on_page):
+                                                if syllabus_url in opened_links_this_year_field: continue
+                                                print(f"\n       詳細処理 {index + 1}/{len(urls_on_page)}: {syllabus_url}")
+                                                syllabus_details = None
+                                                try:
+                                                    if check_session_timeout(driver, screenshots_dir): raise InvalidSessionIdException("Session timeout before detail fetch")
+                                                    initial_handles = set(driver.window_handles)
+                                                    driver.execute_script(f"window.open('{syllabus_url}', '_blank');")
+                                                    WebDriverWait(driver, MEDIUM_WAIT).until(lambda d: len(d.window_handles) == len(initial_handles) + 1)
+                                                    new_handle = list(set(driver.window_handles) - initial_handles)[0]
+                                                    driver.switch_to.window(new_handle)
+                                                    time.sleep(SHORT_WAIT)
+                                                    syllabus_details = get_syllabus_details(driver, year, screenshots_dir)
+                                                    if syllabus_details:
+                                                        scraped_data_all_years.append(syllabus_details)
+                                                        opened_links_this_year_field.add(syllabus_url)
+                                                        processed_count_on_page += 1
+                                                    else:
+                                                        print(f"       [警告] URL {syllabus_url} の詳細情報取得失敗。")
+                                                except Exception as e_detail: raise e_detail # Propagate detail processing errors
+                                                finally:
+                                                    current_handle = driver.current_window_handle
+                                                    if current_handle != main_window:
+                                                        try: driver.close()
+                                                        except Exception: pass
+                                                    try:
+                                                         if main_window in driver.window_handles: driver.switch_to.window(main_window)
+                                                         else: raise NoSuchWindowException("Main window lost")
+                                                    except Exception as e_switch: raise e_switch # Propagate switch errors
+                                                time.sleep(0.5) # Wait a bit after closing tab and switching back
+
+                                        except (TimeoutException, StaleElementReferenceException) as e_link:
+                                            print(f"     [警告] ページ {page_num} のリンク取得/処理中にエラー: {e_link}")
+                                        except (InvalidSessionIdException, NoSuchWindowException) as e_session_detail:
+                                             print(f"     [エラー] 詳細処理中にセッション/ウィンドウエラー: {e_session_detail}")
+                                             year_processed_successfully = False; break # Exit inner link loop and outer pagination loop
+                                        except Exception as e_detail_proc:
+                                             print(f"     [エラー] ページ {page_num} の詳細処理中に予期せぬエラー: {e_detail_proc}")
+                                             traceback.print_exc()
+                                             year_processed_successfully = False; break # Exit inner link loop and outer pagination loop
+                                        # --- 詳細処理ループ終了 ---
+                                        if not year_processed_successfully: break # Exit pagination loop if detail processing failed
+
+                                        last_processed_page_num = page_num
+                                        current_page_links_processed.add(page_num)
+                                        pagination_processed_in_block = True
+                                    else:
+                                        print(f"     [警告] ページ {page_num} のクリックに失敗。このブロックの残りのページ処理をスキップします。")
+                                        break # このブロックのページ番号処理を中断
+                                except (TimeoutException, StaleElementReferenceException, NoSuchElementException) as e_click:
+                                    print(f"     [警告] ページ {page_num} の検索/クリック中にエラー: {e_click}。このブロックの残りのページ処理をスキップします。")
+                                    break # このブロックのページ番号処理を中断
+                                except Exception as e_proc_outer:
+                                     print(f"     [エラー] ページ {page_num} の処理中に予期せぬエラー: {e_proc_outer}")
+                                     traceback.print_exc()
+                                     year_processed_successfully = False # 年度処理失敗フラグ
+                                     break # このブロックのページ番号処理を中断
+
+                            # 年度処理失敗ならページネーションループを抜ける
+                            if not year_processed_successfully: break
+
+                            # --- 3. 「次へ」ボタンの処理 ---
                             try:
-                                next_xpath = "//li[not(contains(@class, 'disabled'))]/a[contains(text(), '次') or contains(., 'Next')]"
-                                next_button = WebDriverWait(driver, MEDIUM_WAIT).until(EC.element_to_be_clickable((By.XPATH, next_xpath)))
-                                print(f"\n   ページ {current_page} 処理完了 ({processed_count_on_page}件)。次ページへ移動します...")
+                                next_xpath = "//ul[contains(@class, 'pagination')]//li[not(contains(@class, 'disabled'))]/a[contains(text(), '次') or contains(., 'Next')]"
+                                next_button = WebDriverWait(driver, SHORT_WAIT).until(EC.element_to_be_clickable((By.XPATH, next_xpath)))
+                                print(f"\n     ページ番号 {last_processed_page_num} まで処理完了。「次へ」をクリックします...")
                                 if click_element(driver, next_button):
-                                    current_page += 1
+                                    print("     「次へ」をクリックしました。結果待機中...")
                                     WebDriverWait(driver, ELEMENT_WAIT_TIMEOUT).until(EC.presence_of_element_located((By.XPATH, result_indicator_xpath)))
-                                    time.sleep(SHORT_WAIT)
+                                    time.sleep(MEDIUM_WAIT) # ページ内容とページネーションの再描画を待つ
+                                    pagination_processed_in_block = True
+                                    # last_processed_page_num は次のループの開始時にアクティブページから更新される
+                                    continue # 次のページネーションブロックへ
                                 else:
-                                    print("     [警告] 次ページクリック失敗。ページネーション終了。")
-                                    break
+                                    print("     [警告] 「次へ」ボタンのクリックに失敗。ページネーションを終了します。")
+                                    break # ページネーションループ終了
                             except TimeoutException:
-                                print(f"\n   ページ {current_page} 処理完了 ({processed_count_on_page}件)。最終ページと判断。")
-                                break
-                            except StaleElementReferenceException:
-                                print("     [警告] 次ページボタンStale。ページネーション終了。")
-                                break
-                            except Exception as e_page:
-                                print(f"   [エラー] ページネーションエラー: {e_page}")
-                                break
+                                print(f"\n     ページ番号 {last_processed_page_num} まで処理完了。「次へ」ボタンが見つからないか無効です。ページネーションを終了します。")
+                                break # ページネーションループ終了
+                            except Exception as e_next:
+                                print(f"     [エラー] 「次へ」ボタンの検索/クリック中にエラー: {e_next}。ページネーションを終了します。")
+                                break # ページネーションループ終了
+
                         # --- ページネーションループ終了 ---
+                        if not year_processed_successfully:
+                             print(f"--- 年度 {year} (分野: {field_name}) 処理中にエラーが発生したため中断 ---")
+
 
                     # --- 年度ループの try...except...else ---
                     except (InvalidSessionIdException, NoSuchWindowException) as e_session_year:
                         # 年度ループ中にセッション/ウィンドウエラーが発生した場合
                         print(f"\n[!!!] 年度 {year} 処理中セッション/ウィンドウエラー: {e_session_year}。WebDriver再起動試行。")
                         if driver:
-                            try:
-                                driver.quit()
-                            except Exception as quit_err:
-                                print(f" WebDriver終了エラー: {quit_err}")
+                            try: driver.quit()
+                            except Exception as quit_err: print(f" WebDriver終了エラー: {quit_err}")
                         driver = None # quit試行後、driverをNoneに設定
                         driver = initialize_driver(CHROME_DRIVER_PATH, HEADLESS_MODE)
                         if not driver: raise Exception("WebDriver再初期化失敗。")
@@ -1148,10 +1290,8 @@ if __name__ == "__main__":
                 # 分野ループ中にセッション/ウィンドウエラーが発生した場合
                 print(f"\n[!!!] 分野 '{field_name}' 処理中セッション/ウィンドウエラー: {e_session_field}。WebDriver再起動試行。")
                 if driver:
-                    try:
-                        driver.quit()
-                    except Exception as quit_err:
-                        print(f" WebDriver終了エラー: {quit_err}")
+                    try: driver.quit()
+                    except Exception as quit_err: print(f" WebDriver終了エラー: {quit_err}")
                 driver = None # quit試行後、driverをNoneに設定
                 driver = initialize_driver(CHROME_DRIVER_PATH, HEADLESS_MODE)
                 if not driver: raise Exception("WebDriver再初期化失敗。")
