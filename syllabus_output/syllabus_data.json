@@ -1,0 +1,127 @@
+[
+    {
+        "course_id": "45334",
+        "year": "2025",
+        "semester": "unknown",
+        "day_period": "水3",
+        "professor_ja": "ベデロ， サイモン",
+        "translations": {
+            "ja": {
+                "name": "慶應義塾大学 シラバス・時間割",
+                "field": "基盤科目共通科目",
+                "credits": "2",
+                "semester": "学期不明",
+                "day_period": "水3",
+                "location": "ι12"
+            },
+            "en": {
+                "name": "慶應義塾大学 シラバス・時間割",
+                "field": "基盤科目共通科目",
+                "credits": "2",
+                "semester": "unknown",
+                "day_period": "水3",
+                "location": "ι12"
+            }
+        }
+    },
+    {
+        "course_id": "45391",
+        "year": "2025",
+        "semester": "unknown",
+        "day_period": "木1",
+        "professor_ja": "小熊 英二",
+        "translations": {
+            "ja": {
+                "name": "慶應義塾大学 シラバス・時間割",
+                "field": "基盤科目共通科目",
+                "credits": "2",
+                "semester": "学期不明",
+                "day_period": "木1",
+                "location": "ε12"
+            },
+            "en": {
+                "name": "慶應義塾大学 シラバス・時間割",
+                "field": "基盤科目共通科目",
+                "credits": "2",
+                "semester": "unknown",
+                "day_period": "木1",
+                "location": "ε12"
+            }
+        }
+    },
+    {
+        "course_id": "00424",
+        "year": "2025",
+        "semester": "unknown",
+        "day_period": "火1/水1/木2/金2",
+        "professor_ja": "山本 薫, アルマンスール， アフマド, 植村 さおり",
+        "translations": {
+            "ja": {
+                "name": "慶應義塾大学 シラバス・時間割",
+                "field": "基盤科目言語コミュニケーション科目アラビア語",
+                "credits": "4",
+                "semester": "学期不明",
+                "day_period": "火1/水1/木2/金2",
+                "location": "火1:τ12, 水1:ι17, 木2:ο11, 金2:ε24"
+            },
+            "en": {
+                "name": "慶應義塾大学 シラバス・時間割",
+                "field": "基盤科目言語コミュニケーション科目アラビア語",
+                "credits": "4",
+                "semester": "unknown",
+                "day_period": "火1/水1/木2/金2",
+                "location": "火1:τ12, 水1:ι17, 木2:ο11, 金2:ε24"
+            }
+        }
+    },
+    {
+        "course_id": "00769",
+        "year": "2025",
+        "semester": "unknown",
+        "day_period": "火2/水2/木2/金1",
+        "professor_ja": "アルマンスール， アフマド, 植村 さおり, 兼定 愛, ジャームース， ラーウィヤ",
+        "translations": {
+            "ja": {
+                "name": "慶應義塾大学 シラバス・時間割",
+                "field": "基盤科目言語コミュニケーション科目アラビア語",
+                "credits": "4",
+                "semester": "学期不明",
+                "day_period": "火2/水2/木2/金1",
+                "location": "火2:τ21, 水2:ι17, 木2:ι14, 金1:λ18"
+            },
+            "en": {
+                "name": "慶應義塾大学 シラバス・時間割",
+                "field": "基盤科目言語コミュニケーション科目アラビア語",
+                "credits": "4",
+                "semester": "unknown",
+                "day_period": "火2/水2/木2/金1",
+                "location": "火2:τ21, 水2:ι17, 木2:ι14, 金1:λ18"
+            }
+        }
+    },
+    {
+        "course_id": "00955",
+        "year": "2025",
+        "semester": "unknown",
+        "day_period": "水4",
+        "professor_ja": "アルマンスール， アフマド",
+        "translations": {
+            "ja": {
+                "name": "慶應義塾大学 シラバス・時間割",
+                "field": "基盤科目言語コミュニケーション科目アラビア語",
+                "credits": "2",
+                "semester": "学期不明",
+                "day_period": "水4",
+                "location": "ε23"
+            },
+            "en": {
+                "name": "慶應義塾大学 シラバス・時間割",
+                "field": "基盤科目言語コミュニケーション科目アラビア語",
+                "credits": "2",
+                "semester": "unknown",
+                "day_period": "水4",
+                "location": "ε23"
+            }
+        }
+    }
+]
