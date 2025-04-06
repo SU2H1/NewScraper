@@ -28,14 +28,20 @@ from urllib.parse import urlparse, parse_qs, urlencode, urlunparse
 
 # --- グローバル変数・設定 ---
 CHROME_DRIVER_PATH = None # ChromeDriverのパス (Noneの場合は自動検出)
-USER_EMAIL = 'kaitosumishi@keio.jp' # ログインに使用するメールアドレス
-USER_PASSWORD = '0528QBSkaito' # ログインに使用するパスワード
+USER_EMAIL = 'Email' # ログインに使用するメールアドレス
+USER_PASSWORD = 'Password' # ログインに使用するパスワード
 OUTPUT_DIR_NAME = 'syllabus_output' # 出力ディレクトリ名
 OUTPUT_JSON_FILE = 'syllabus_data.json' # 出力JSONファイル名
-TARGET_FIELDS = ["基盤科目", "先端科目", "特設科目"] # スクレイピング対象の分野
-TARGET_YEARS = [2025, 2024, 2023] # スクレイピング対象の年度
+# TARGET_FIELDS = ["基盤科目", "先端科目", "特設科目"] # スクレイピング対象の分野
+# TARGET_YEARS = [2025, 2024, 2023] # スクレイピング対象の年度
+TARGET_FIELDS = ["基盤科目"] # 基盤科目のみに限定
+TARGET_YEARS = [2025] # 2025年度のみに限定
+CONSECUTIVE_ERROR_THRESHOLD = 5  # 連続エラーの最大許容数
+ERROR_RATE_THRESHOLD = 0.7  # エラー率の許容閾値（70%）
+MIN_SAMPLES_BEFORE_CHECK = 10  # エラー率チェック前の最小サンプル数
+ENABLE_AUTO_HALT = True  # 自動停止機能の有効/無効
 # ★★★ パフォーマンス向上のため、Trueに設定することを推奨 ★★★
-HEADLESS_MODE = False # Trueにするとヘッドレスモードで実行
+HEADLESS_MODE = True # Trueにするとヘッドレスモードで実行
 # ★★★ 並列処理関連変数は削除またはコメントアウト ★★★
 # PARALLEL_PROCESSING = False # 並列処理を無効化
 # PARALLEL_WORKERS = 10 # (使用しない)
@@ -433,12 +439,10 @@ def get_syllabus_details(driver, current_year, screenshots_dir):
         print("           --- 日本語情報取得開始 ---")
         for key, (label, xpath, default_value, *_) in ja_map_to_use.items():
             if key == 'course_id_fallback': continue
-            # print(f"               日本語 {label} 取得試行 (XPath: {xpath if xpath else 'N/A'})...") # 詳細ログは省略可
             ja_data[key] = get_text_by_xpath(driver, xpath, default_value)
-            # print(f"                   -> {ja_data[key][:50]}...") # 詳細ログは省略可
 
             # 必須チェック (TTCK/Online処理前)
-            optional_keys = ['professor', 'selection_method', 'class_format', 'location', 'day_period'] # locationとday_periodも一旦オプショナル扱い
+            optional_keys = ['professor', 'selection_method', 'class_format', 'location', 'day_period'] 
             if key not in optional_keys:
                 if key == 'name':
                     if ja_data[key] == default_value or any(pattern in ja_data[key] for pattern in INVALID_COURSE_NAME_PATTERNS):
@@ -450,8 +454,9 @@ def get_syllabus_details(driver, current_year, screenshots_dir):
                         missing_details_ja.append(f"{label}(ja): 未取得/空")
 
         # --- ★★★ Online/TTCK処理 (日本語) ★★★ ---
+        # この変数定義を先に行う - 変数が未定義というエラーの原因
         is_ttck_ja = "TTCK" in ja_data.get('name', '')
-        is_online_ja = "オンライン" in ja_data.get('class_format', '')
+        is_online_ja = "オンライン" in ja_data.get('class_format', '') or "オンデマンド" in ja_data.get('class_format', '')
 
         if is_ttck_ja:
             print("               日本語: TTCKコース検出。教室と曜日時限を調整します。")
@@ -459,8 +464,11 @@ def get_syllabus_details(driver, current_year, screenshots_dir):
             if not ja_data.get('day_period') or ja_data.get('day_period') == "曜日時限不明":
                 ja_data['day_period'] = "特定期間集中"
         elif is_online_ja:
-            print("               日本語: オンライン授業検出。教室を調整します。")
+            print("               日本語: オンライン授業検出。教室と曜日時限を調整します。")
             ja_data['location'] = "オンライン"
+            # オンライン授業用の曜日時限対応を追加
+            if not ja_data.get('day_period') or ja_data.get('day_period') == "曜日時限不明":
+                ja_data['day_period'] = "オンライン授業"
 
         # --- 必須データ最終チェック (日本語) ---
         # TTCKでない場合のみ、教室と曜日時限をチェック
@@ -630,7 +638,13 @@ def aggregate_syllabus_data(all_raw_data):
         )
 
         if not name_ja_key or not field_ja_key or not credits_ja_key or semester_agg_key == "unknown":
-            print(f"[警告] 集約キーに必要な情報が不足または学期不明 (Course ID: {course_id}, Year: {item.get('year_scraped')}, Semester: {semester_agg_key})。スキップします。")
+            error_msg = f"集約キーに必要な情報が不足または学期不明 (Course ID: {course_id}, Year: {item.get('year_scraped')}, Semester: {semester_agg_key})"
+            print(f"[警告] {error_msg}")
+            
+            if not pause_on_error(f"Missing critical aggregation data: {error_msg}"):
+                print("ユーザーによる中断。スクリプトを終了します。")
+                sys.exit(1)
+            
             skipped_count += 1
             continue
 
@@ -980,6 +994,11 @@ if __name__ == "__main__":
                 print(f"\n===== 分野: {field_name} ({year}年度) の処理開始 =====")
                 field_processed_successfully = True
                 opened_links_this_year_field = set()
+                field_total_attempts = 0
+                field_error_count = 0
+                consecutive_errors = 0
+                ttck_error_count = 0  # TTCK科目専用のエラーカウンター
+                opened_links_this_year_field = set() # この年度・分野で処理済みの詳細ページURL記録用
 
                 try:
                     if check_session_timeout(driver, screenshots_dir):
@@ -988,7 +1007,7 @@ if __name__ == "__main__":
                             print("[エラー] 再ログイン失敗。この分野をスキップします。")
                             field_index += 1; continue
 
-                    try: # 検索ページ確認・移動
+                    try:
                         current_url_check = driver.current_url
                         if "gslbs.keio.jp/syllabus/search" not in current_url_check:
                             print("検索ページ以外にいるため、検索ページに移動します。")
@@ -996,7 +1015,13 @@ if __name__ == "__main__":
                             WebDriverWait(driver, ELEMENT_WAIT_TIMEOUT).until(EC.url_contains("gslbs.keio.jp/syllabus/search"))
                             time.sleep(MEDIUM_WAIT)
                     except WebDriverException as e_url_check:
-                        print(f"[警告] 現在のURL確認中にエラー: {e_url_check}。セッションエラーとして処理します。")
+                        screenshot_path = save_screenshot(driver, f"url_check_error_{year}_{field_name}", screenshots_dir)
+                        print(f"[警告] 現在のURL確認中にエラー: {e_url_check}。")
+                        
+                        if not pause_on_error("WebDriver exception during URL check", e_url_check, screenshot_path):
+                            print("ユーザーによる中断。スクリプトを終了します。")
+                            sys.exit(1)
+                        
                         raise InvalidSessionIdException("URL check failed, likely closed window.") from e_url_check
 
                     # --- 検索条件設定 (JS高速化 + Seleniumフォールバック) ---
@@ -1193,32 +1218,68 @@ if __name__ == "__main__":
 
                                                 syllabus_details = get_syllabus_details(driver, year, screenshots_dir)
 
+                                                # --- 詳細ページ処理時のカウンター更新（成功時） ---
                                                 if syllabus_details:
                                                     scraped_data_all_years.append(syllabus_details)
                                                     opened_links_this_year_field.add(syllabus_url)
                                                     processed_count_on_page += 1
-                                                # else: print(f"           [警告] URL {syllabus_url} の詳細情報取得失敗 (None返却)。") # ログ省略可
+                                                    # 成功したのでカウンターを更新
+                                                    field_total_attempts += 1
+                                                    consecutive_errors = 0  # 連続エラーをリセット
+                                                else:
+                                                    # 詳細取得失敗だがエラーではなかった場合
+                                                    field_total_attempts += 1
+                                                    field_error_count += 1
+                                                    consecutive_errors += 1
 
+                                            # --- MissingCriticalDataError発生時の処理 ---
                                             except MissingCriticalDataError as e_critical_detail:
-                                                print(f"           [エラー] {e_critical_detail}。この科目をスキップします。")
-                                            except (InvalidSessionIdException, NoSuchWindowException) as e_session_detail:
-                                                print(f"           [エラー] 詳細処理中にセッション/ウィンドウエラー: {e_session_detail}"); raise
-                                            except Exception as e_detail:
-                                                print(f"           [エラー] URL {syllabus_url} の詳細処理中に予期せぬエラー: {e_detail}"); traceback.print_exc()
-                                                save_screenshot(driver, f"detail_proc_unknown_error_{year}_{field_name}", screenshots_dir)
+                                                screenshot_path = save_screenshot(driver, f"critical_data_missing_{year}_{course_id or 'unknownID'}", screenshots_dir)
+                                                print(f"           [エラー] {e_critical_detail}。")
+                                                
+                                                if not pause_on_error(f"Critical data missing for course: {syllabus_url}", e_critical_detail, screenshot_path):
+                                                    print("ユーザーによる中断。スクリプトを終了します。")
+                                                    sys.exit(1)
+                                                
+                                                field_total_attempts += 1
+                                                field_error_count += 1
+                                                consecutive_errors += 1
+                                                # TTCKに関するエラーの場合
+                                                if "TTCK" in str(e_critical_detail):
+                                                    ttck_error_count += 1
+                                                    if ENABLE_AUTO_HALT and ttck_error_count >= 3:
+                                                        print(f"\n[!!!] 処理を中断: TTCK科目で複数のエラーが発生しました (合計: {ttck_error_count}件)")
+                                                        print("TTCK科目の詳細情報取得に構造的な問題があります。")
+                                                        save_screenshot(driver, f"halted_ttck_errors_{year}_{field_name}", screenshots_dir)
+                                                        sys.exit(f"TTCK科目エラーにより停止 ({ttck_error_count}件)")
+# --- finally ブロック末尾に追加するコード ---
                                             finally:
                                                 current_handle = driver.current_window_handle
                                                 if current_handle != main_window:
                                                     try:
-                                                         if tab_handle and tab_handle in driver.window_handles: driver.close()
+                                                        if tab_handle and tab_handle in driver.window_handles: driver.close()
                                                     except Exception as close_err: print(f"           [逐次処理警告] タブ {tab_handle} を閉じる際にエラー: {close_err}")
                                                     try:
                                                         if main_window in driver.window_handles: driver.switch_to.window(main_window)
                                                         else: raise NoSuchWindowException("Main window lost after processing detail tab.")
                                                     except Exception as e_switch: print(f"           [エラー] メインウィンドウへの切り替え失敗: {e_switch}"); raise
                                                 time.sleep(0.1)
-                                        print(f"        ページ {current_active_page_num} の {processed_count_on_page}/{len(urls_on_page)} 件の詳細を(逐次)処理。")
-                                    else: print(f"         ページ {current_active_page_num} に処理対象のリンクが見つかりませんでした。")
+                                                
+                                                # 連続エラーと高エラー率のチェック
+                                                if ENABLE_AUTO_HALT and consecutive_errors >= CONSECUTIVE_ERROR_THRESHOLD:
+                                                    print(f"\n[!!!] 処理を中断: {consecutive_errors}回の連続エラーが発生")
+                                                    print("システム的な問題が発生している可能性があります。")
+                                                    save_screenshot(driver, f"halted_consecutive_errors_{year}_{field_name}", screenshots_dir)
+                                                    sys.exit(f"連続エラー ({consecutive_errors}回) により停止")
+
+                                                # エラー率のチェック (十分なサンプル数がある場合のみ)
+                                                if ENABLE_AUTO_HALT and field_total_attempts >= MIN_SAMPLES_BEFORE_CHECK:
+                                                    error_rate = field_error_count / field_total_attempts
+                                                    if error_rate > ERROR_RATE_THRESHOLD:
+                                                        print(f"\n[!!!] 処理を中断: エラー率が閾値を超過 ({field_error_count}/{field_total_attempts}件, {error_rate:.1%})")
+                                                        print(f"許容されるエラー率: {ERROR_RATE_THRESHOLD:.1%}")
+                                                        save_screenshot(driver, f"halted_high_error_rate_{year}_{field_name}", screenshots_dir)
+                                                        sys.exit(f"高エラー率 ({error_rate:.1%}) により停止")
 
                                 except (TimeoutException, StaleElementReferenceException) as e_link:
                                     print(f"         [警告] ページ {current_active_page_num} のリンク取得/処理中にエラー: {e_link}")
@@ -1306,14 +1367,19 @@ if __name__ == "__main__":
                         print(f"--- 分野 {field_name} ({year}年度) 処理中にエラーが発生したため中断 ---")
                         field_processed_successfully = False
 
-                # --- 分野ループ try...except...finally ---
                 except (InvalidSessionIdException, NoSuchWindowException) as e_session_field:
                     print(f"\n[!!!] 分野 '{field_name}' ({year}年度) 処理中セッション/ウィンドウエラー: {e_session_field}。WebDriver再起動試行。")
+                    # --- 以下のif文を削除 ---
+                    # if not pause_on_error(f"WebDriver session error during field '{field_name}' processing", e_session_field, screenshot_path):
+                    #     print("ユーザーによる中断。スクリプトを終了します。")
+                    #     sys.exit(1)
+                    # --- ここまで削除 ---
                     if driver:
                         try: driver.quit()
                         except Exception as quit_err: print(f" WebDriver終了エラー: {quit_err}")
                     driver = None
                     driver = initialize_driver(CHROME_DRIVER_PATH, HEADLESS_MODE)
+                    # Rest of existing code...
                     if not driver: print("[!!!] WebDriver再初期化失敗。スクリプトを終了します。"); raise Exception("WebDriver再初期化失敗。")
                     try:
                         if not login(driver, USER_EMAIL, USER_PASSWORD, screenshots_dir): print("[!!!] 再ログイン失敗。スクリプトを終了します。"); raise Exception("再ログイン失敗。")
