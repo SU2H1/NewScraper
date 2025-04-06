@@ -29,13 +29,11 @@ from urllib.parse import urlparse, parse_qs, urlencode, urlunparse
 # --- グローバル変数・設定 ---
 CHROME_DRIVER_PATH = None # ChromeDriverのパス (Noneの場合は自動検出)
 USER_EMAIL = 'Email' # ログインに使用するメールアドレス
-USER_PASSWORD = 'Password' # ログインに使用するパスワード
+USER_PASSWORD = 'password' # ログインに使用するパスワード
 OUTPUT_DIR_NAME = 'syllabus_output' # 出力ディレクトリ名
 OUTPUT_JSON_FILE = 'syllabus_data.json' # 出力JSONファイル名
-# TARGET_FIELDS = ["基盤科目", "先端科目", "特設科目"] # スクレイピング対象の分野
-# TARGET_YEARS = [2025, 2024, 2023] # スクレイピング対象の年度
-TARGET_FIELDS = ["基盤科目"] # 基盤科目のみに限定
-TARGET_YEARS = [2025] # 2025年度のみに限定
+TARGET_FIELDS = ["基盤科目", "先端科目", "特設科目"] # スクレイピング対象の分野
+TARGET_YEARS = [2025, 2024, 2023] # スクレイピング対象の年度
 CONSECUTIVE_ERROR_THRESHOLD = 5  # 連続エラーの最大許容数
 ERROR_RATE_THRESHOLD = 0.7  # エラー率の許容閾値（70%）
 MIN_SAMPLES_BEFORE_CHECK = 10  # エラー率チェック前の最小サンプル数
@@ -48,11 +46,11 @@ HEADLESS_MODE = True # Trueにするとヘッドレスモードで実行
 PAGE_LOAD_TIMEOUT = 60 # ページの読み込みタイムアウト時間(秒)
 ELEMENT_WAIT_TIMEOUT = 90 # 要素が表示されるまでの最大待機時間(秒)
 # ★★★ 待機時間を短縮して速度向上を試みる ★★★
-SHORT_WAIT = 0.5 # 短い待機時間(秒)
+SHORT_WAIT = 0.4 # 短い待機時間(秒)
 MEDIUM_WAIT = 1 # 中程度の待機時間(秒)
 LONG_WAIT = 2 # 長い待機時間(秒)
 # ★★★ 英語ページでのJSレンダリング待機時間 ★★★
-JS_RENDER_WAIT = 0.5 # 秒 (必要に応じて調整)
+JS_RENDER_WAIT = 0.4 # 秒 (必要に応じて調整)
 
 # --- ★ カスタム例外クラス ★ ---
 class MissingCriticalDataError(Exception):
@@ -388,11 +386,43 @@ def get_syllabus_details(driver, current_year, screenshots_dir):
         ja_map_to_use = INFO_MAP_JA_2023_2024.copy()
         print(f"           {current_year}年度のXPath定義(JA)を使用します。")
 
-    # --- 1. 日本語ページの情報を取得 ---
     try:
         japanese_url = driver.current_url # 現在のURL (日本語版のはず)
         print(f"           日本語ページ処理中: {japanese_url}")
-        WebDriverWait(driver, ELEMENT_WAIT_TIMEOUT).until(EC.presence_of_element_located((By.TAG_NAME, "body")))
+        
+        # 2024年度の場合は特別な待機処理
+        if current_year == 2024:
+            # 超長いタイムアウトを設定
+            extended_timeout = ELEMENT_WAIT_TIMEOUT * 3
+            print(f"           2024年度シラバス: 拡張タイムアウト設定 ({extended_timeout}秒)")
+            
+            # より確実なページ読み込み確認
+            for retry in range(3):
+                try:
+                    # 基本要素の待機
+                    WebDriverWait(driver, extended_timeout).until(
+                        EC.presence_of_element_located((By.TAG_NAME, "body"))
+                    )
+                    
+                    # 2024年度のページ構造に対応
+                    detail_container_xpath = "//div[contains(@class,'syllabus-info')] | //table[contains(@class,'basic-table')]"
+                    WebDriverWait(driver, extended_timeout).until(
+                        EC.presence_of_element_located((By.XPATH, detail_container_xpath))
+                    )
+                    print(f"           2024年度シラバス: 詳細コンテンツ読み込み完了")
+                    break
+                    
+                except TimeoutException:
+                    if retry < 2:
+                        print(f"           2024年度シラバス読み込みタイムアウト。リトライ ({retry+1}/3)...")
+                        driver.refresh()
+                        time.sleep(LONG_WAIT * 2)
+                    else:
+                        print(f"           [警告] 2024年度シラバス読み込み失敗。続行試行...")
+        else:
+            # 通常の待機処理
+            WebDriverWait(driver, ELEMENT_WAIT_TIMEOUT).until(EC.presence_of_element_located((By.TAG_NAME, "body")))
+        
         time.sleep(MEDIUM_WAIT)
 
         # --- Course ID 取得 ---
@@ -510,9 +540,27 @@ def get_syllabus_details(driver, current_year, screenshots_dir):
     print(f"           英語ページ処理中: {english_url}")
     try:
         driver.get(english_url)
-        WebDriverWait(driver, ELEMENT_WAIT_TIMEOUT).until(EC.presence_of_element_located((By.TAG_NAME, "body")))
-        print(f"           英語ページ読み込み完了。JavaScriptレンダリング待機中 ({JS_RENDER_WAIT}秒)...")
-        time.sleep(JS_RENDER_WAIT)
+        
+        # 2024年度の場合は特別な待機処理
+        if current_year == 2024:
+            extended_timeout = ELEMENT_WAIT_TIMEOUT * 2.5
+            print(f"           2024年度英語シラバス: 拡張タイムアウト設定 ({extended_timeout}秒)")
+            
+            try:
+                WebDriverWait(driver, extended_timeout).until(EC.presence_of_element_located((By.TAG_NAME, "body")))
+                # 2024年度の英語ページ構造に対応
+                detail_container_xpath = "//div[contains(@class,'syllabus-info')] | //table[contains(@class,'basic-table')]"
+                WebDriverWait(driver, extended_timeout).until(
+                    EC.presence_of_element_located((By.XPATH, detail_container_xpath))
+                )
+            except TimeoutException:
+                print(f"           2024年度英語シラバスページ読み込みタイムアウト。一部情報は取得できない可能性があります。")
+        else:
+            WebDriverWait(driver, ELEMENT_WAIT_TIMEOUT).until(EC.presence_of_element_located((By.TAG_NAME, "body")))
+        
+        extended_render_wait = JS_RENDER_WAIT * 2 if current_year == 2024 else JS_RENDER_WAIT
+        print(f"           英語ページ読み込み完了。JavaScriptレンダリング待機中 ({extended_render_wait}秒)...")
+        time.sleep(extended_render_wait)
         print(f"           待機完了。英語情報取得試行...")
 
         # --- 年度に応じて使用するXPathマップを選択 (英語用) ---
@@ -980,10 +1028,10 @@ if __name__ == "__main__":
             print(f"\n<<<<< {year}年度 の処理開始 >>>>>")
             year_processed_successfully = True
 
-            if year == 2024: # タイムアウト調整は維持
-                current_page_timeout = PAGE_LOAD_TIMEOUT * 2
-                current_element_timeout = ELEMENT_WAIT_TIMEOUT * 1.5
-                print(f"   注意: 2024年度用の拡張タイムアウト設定を使用します (ページ:{current_page_timeout}秒, 要素:{current_element_timeout}秒)")
+            if year == 2024: # タイムアウト調整を強化
+                current_page_timeout = PAGE_LOAD_TIMEOUT * 3  # さらに増加
+                current_element_timeout = ELEMENT_WAIT_TIMEOUT * 2.5  # さらに増加
+                print(f"   注意: 2024年度用の強化タイムアウト設定を使用します (ページ:{current_page_timeout}秒, 要素:{current_element_timeout}秒)")
             else:
                 current_page_timeout = PAGE_LOAD_TIMEOUT
                 current_element_timeout = ELEMENT_WAIT_TIMEOUT
@@ -1133,7 +1181,78 @@ if __name__ == "__main__":
                     # --- 結果表示待機 ---
                     result_indicator_xpath = "//a[contains(@class, 'syllabus-detail')] | //div[contains(text(), '該当するデータはありません')] | //ul[contains(@class, 'pagination')]"
                     print("   検索結果表示待機中...")
-                    WebDriverWait(driver, current_element_timeout).until(EC.presence_of_element_located((By.XPATH, result_indicator_xpath)))
+                    # 検索結果の待機処理を改善（最大3回リトライ）
+                    max_search_retries = 3
+                    for search_retry in range(max_search_retries):
+                        try:
+                            print(f"   検索結果表示待機中... (試行 {search_retry + 1}/{max_search_retries})")
+                            # 一旦短いタイムアウトで試してみる
+                            try:
+                                WebDriverWait(driver, min(30, current_element_timeout/2)).until(
+                                    EC.presence_of_element_located((By.XPATH, result_indicator_xpath))
+                                )
+                                print("   検索結果表示完了。")
+                                break
+                            except TimeoutException:
+                                # ページが完全に読み込まれていない可能性があるため、リロード
+                                if search_retry < max_search_retries - 1:
+                                    print(f"   検索結果表示タイムアウト、ページをリロードして再試行します... ({search_retry + 1}/{max_search_retries})")
+                                    driver.refresh()
+                                    time.sleep(MEDIUM_WAIT * 2)
+                                    
+                                    # 検索条件を再設定して検索ボタンを再度クリック
+                                    if not js_search_success:
+                                        # 年度選択
+                                        year_select_xpath = "//select[@name='KEYWORD_TTBLYR']"
+                                        year_select_element = WebDriverWait(driver, ELEMENT_WAIT_TIMEOUT).until(
+                                            EC.presence_of_element_located((By.XPATH, year_select_xpath))
+                                        )
+                                        select_option_by_text(driver, year_select_element, str(year))
+                                        time.sleep(MEDIUM_WAIT)
+                                        
+                                        # 分野選択
+                                        field_select_xpath = "//select[@name='KEYWORD_FLD1CD']"
+                                        field_select_element = WebDriverWait(driver, ELEMENT_WAIT_TIMEOUT).until(
+                                            EC.presence_of_element_located((By.XPATH, field_select_xpath))
+                                        )
+                                        select_option_by_text(driver, field_select_element, field_name)
+                                        time.sleep(MEDIUM_WAIT)
+                                    
+                                    # 検索ボタンを再クリック
+                                    search_xpath = "//button[@data-action_id='SYLLABUS_SEARCH_KEYWORD_EXECUTE'] | //button[contains(text(), '検索')]"
+                                    search_button = WebDriverWait(driver, ELEMENT_WAIT_TIMEOUT).until(
+                                        EC.element_to_be_clickable((By.XPATH, search_xpath))
+                                    )
+                                    click_element(driver, search_button)
+                                    
+                                    # 長めのタイムアウトで最終試行
+                                    if search_retry == max_search_retries - 2:
+                                        WebDriverWait(driver, current_element_timeout).until(
+                                            EC.presence_of_element_located((By.XPATH, result_indicator_xpath))
+                                        )
+                                        print("   検索結果表示完了。")
+                                        break
+                                else:
+                                    # 最終試行でもタイムアウトした場合
+                                    raise TimeoutException(f"検索結果の表示に {max_search_retries} 回失敗しました")
+                        except TimeoutException as e_timeout:
+                            if search_retry == max_search_retries - 1:
+                                print(f"     [エラー] 検索結果が表示されません。この分野をスキップします。")
+                                save_screenshot(driver, f"search_timeout_{year}_{field_name}", screenshots_dir)
+                                field_index += 1
+                                field_processed_successfully = False
+                                year_processed_successfully = False
+                                break
+                        except Exception as e_search:
+                            print(f"     [エラー] 検索処理中に予期せぬエラー: {e_search}")
+                            save_screenshot(driver, f"search_error_{year}_{field_name}", screenshots_dir)
+                            field_index += 1
+                            field_processed_successfully = False
+                            year_processed_successfully = False
+                            traceback.print_exc()
+                            break
+
+                    # オリジナルコードの続き (if field_processed_successfully から)
                     time.sleep(MEDIUM_WAIT); print("   検索結果表示完了。")
 
                     # --- 該当なしチェック ---
