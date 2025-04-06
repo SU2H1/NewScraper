@@ -16518,5 +16518,1155 @@
         "available_years": [
             "2025"
         ]
+    },
+    {
+        "course_id": "47394",
+        "year": "2025",
+        "semester": "spring",
+        "translations": {
+            "ja": {
+                "name": "ウェルビーイングに基づくまちづくりの政策デザイン",
+                "field": "特設科目",
+                "credits": "2",
+                "semester": "2025 春",
+                "Classroom": "ο11",
+                "day_period": "金3",
+                "selection_method": "抽選"
+            },
+            "en": {
+                "name": "WELLBEING-BASED URBAN AND REGION POLICY DESIGN",
+                "field": "SPECIAL SUBJECTS",
+                "credits": "2",
+                "semester": "2025 Spring",
+                "Classroom": "ο11",
+                "day_period": "Fri.3",
+                "selection_method": "Lottery"
+            }
+        },
+        "professors": [
+            {
+                "name": {
+                    "ja": "南雲 岳彦",
+                    "en": "NAGUMO"
+                },
+                "department": {
+                    "ja": "特設科目",
+                    "en": "SPECIAL SUBJECTS"
+                }
+            }
+        ],
+        "available_years": [
+            "2025"
+        ]
+    },
+    {
+        "course_id": "41601",
+        "year": "2025",
+        "semester": "spring",
+        "translations": {
+            "ja": {
+                "name": "宇宙安全保障",
+                "field": "特設科目",
+                "credits": "2",
+                "semester": "2025 春",
+                "Classroom": "τ12",
+                "day_period": "火2",
+                "selection_method": "抽選以外"
+            },
+            "en": {
+                "name": "SPACE SECURITY",
+                "field": "SPECIAL SUBJECTS",
+                "credits": "2",
+                "semester": "2025 Spring",
+                "Classroom": "τ12",
+                "day_period": "Tue.2",
+                "selection_method": "Other Than Lottery"
+            }
+        },
+        "professors": [
+            {
+                "name": {
+                    "ja": "福島 康仁",
+                    "en": "FUKUSHIMA"
+                },
+                "department": {
+                    "ja": "特設科目",
+                    "en": "SPECIAL SUBJECTS"
+                }
+            }
+        ],
+        "available_years": [
+            "2025"
+        ]
+    },
+    {
+        "course_id": "47523",
+        "year": "2025",
+        "semester": "spring",
+        "translations": {
+            "ja": {
+                "name": "ＡＩ時代の次世代情報システム概論(寄附講座)",
+                "field": "特設科目",
+                "credits": "2",
+                "semester": "2025 春",
+                "Classroom": "κ12",
+                "day_period": "水1",
+                "selection_method": ""
+            },
+            "en": {
+                "name": "INTRODUCTION TO NEXT-GENERATION INFORMATION SYSTEMS IN THE AI ERA(Sponsored Course)",
+                "field": "SPECIAL SUBJECTS",
+                "credits": "2",
+                "semester": "2025 Spring",
+                "Classroom": "κ12",
+                "day_period": "Wed.1",
+                "selection_method": ""
+            }
+        },
+        "professors": [
+            {
+                "name": {
+                    "ja": "神成 淳司",
+                    "en": "SHINJO"
+                },
+                "department": {
+                    "ja": "特設科目",
+                    "en": "SPECIAL SUBJECTS"
+                }
+            },
+            {
+                "name": {
+                    "ja": "重近 範行",
+                    "en": "ATSUSHI; SHIGECHIKA"
+                },
+                "department": {
+                    "ja": "特設科目",
+                    "en": "SPECIAL SUBJECTS"
+                }
+            },
+            {
+                "name": {
+                    "ja": "バンミーター， ロドニー Ｄ．",
+                    "en": "NORIYUKI; VAN METER"
+                },
+                "department": {
+                    "ja": "特設科目",
+                    "en": "SPECIAL SUBJECTS"
+                }
+            }
+        ],
+        "available_years": [
+            "2025"
+        ]
+    },
+    {
+        "course_id": "47380",
+        "year": "2025",
+        "semester": "spring",
+        "translations": {
+            "ja": {
+                "name": "エシカル幸福論",
+                "field": "特設科目",
+                "credits": "2",
+                "semester": "2025 春",
+                "Classroom": "Ω12",
+                "day_period": "水3",
+                "selection_method": "抽選"
+            },
+            "en": {
+                "name": "ETHICAL TRANSFORMATION FOR PERSONAL, SOCIAL AND PLANETARY WELLBEING",
+                "field": "SPECIAL SUBJECTS",
+                "credits": "2",
+                "semester": "2025 Spring",
+                "Classroom": "Ω12",
+                "day_period": "Wed.3",
+                "selection_method": "Lottery"
+            }
+        },
+        "professors": [
+            {
+                "name": {
+                    "ja": "末吉 里花",
+                    "en": "SUEYOSHI"
+                },
+                "department": {
+                    "ja": "特設科目",
+                    "en": "SPECIAL SUBJECTS"
+                }
+            }
+        ],
+        "available_years": [
+            "2025"
+        ]
+    },
+    {
+        "course_id": "42058",
+        "year": "2025",
+        "semester": "spring",
+        "translations": {
+            "ja": {
+                "name": "演劇と現代(GIGA)",
+                "field": "特設科目",
+                "credits": "2",
+                "semester": "2025 春",
+                "Classroom": "ι23",
+                "day_period": "木4",
+                "selection_method": "抽選"
+            },
+            "en": {
+                "name": "THEATRE IN OUR TIME(GIGA)",
+                "field": "SPECIAL SUBJECTS",
+                "credits": "2",
+                "semester": "2025 Spring",
+                "Classroom": "ι23",
+                "day_period": "Thu.4",
+                "selection_method": "Lottery"
+            }
+        },
+        "professors": [
+            {
+                "name": {
+                    "ja": "石渕 理恵子",
+                    "en": "ISHIBUCHI"
+                },
+                "department": {
+                    "ja": "特設科目",
+                    "en": "SPECIAL SUBJECTS"
+                }
+            }
+        ],
+        "available_years": [
+            "2025"
+        ]
+    },
+    {
+        "course_id": "32998",
+        "year": "2025",
+        "semester": "spring",
+        "translations": {
+            "ja": {
+                "name": "海洋安全保障と海上法執行",
+                "field": "特設科目",
+                "credits": "2",
+                "semester": "2025 春",
+                "Classroom": "Ω12",
+                "day_period": "月3",
+                "selection_method": "抽選"
+            },
+            "en": {
+                "name": "MARITIME SECURITY AND MARITIME LAW ENFORCEMENT",
+                "field": "SPECIAL SUBJECTS",
+                "credits": "2",
+                "semester": "2025 Spring",
+                "Classroom": "Ω12",
+                "day_period": "Mon.3",
+                "selection_method": "Lottery"
+            }
+        },
+        "professors": [
+            {
+                "name": {
+                    "ja": "古谷 健太郎",
+                    "en": "FURUYA"
+                },
+                "department": {
+                    "ja": "特設科目",
+                    "en": "SPECIAL SUBJECTS"
+                }
+            }
+        ],
+        "available_years": [
+            "2025"
+        ]
+    },
+    {
+        "course_id": "14446",
+        "year": "2025",
+        "semester": "spring",
+        "translations": {
+            "ja": {
+                "name": "環境ヘルスサイエンス【学期前半】",
+                "field": "特設科目",
+                "credits": "2",
+                "semester": "2025 春(学期前半)",
+                "Classroom": "ι11",
+                "day_period": "火4,5",
+                "selection_method": "抽選以外"
+            },
+            "en": {
+                "name": "ENVIRONMENT AND HEALTH SCIENCE[1st half of semester]",
+                "field": "SPECIAL SUBJECTS",
+                "credits": "2",
+                "semester": "2025 Spring (1st Half)",
+                "Classroom": "ι11",
+                "day_period": "Tue.4,5",
+                "selection_method": "Other Than Lottery"
+            }
+        },
+        "professors": [
+            {
+                "name": {
+                    "ja": "島津 明人",
+                    "en": "SHIMAZU"
+                },
+                "department": {
+                    "ja": "特設科目",
+                    "en": "SPECIAL SUBJECTS"
+                }
+            }
+        ],
+        "available_years": [
+            "2025"
+        ]
+    },
+    {
+        "course_id": "40328",
+        "year": "2025",
+        "semester": "spring",
+        "translations": {
+            "ja": {
+                "name": "グリーンビジネスデザイン",
+                "field": "特設科目",
+                "credits": "2",
+                "semester": "2025 春",
+                "Classroom": "Ω22",
+                "day_period": "木4",
+                "selection_method": "抽選以外"
+            },
+            "en": {
+                "name": "GREEN BUSINESS DESIGN",
+                "field": "SPECIAL SUBJECTS",
+                "credits": "2",
+                "semester": "2025 Spring",
+                "Classroom": "Ω22",
+                "day_period": "Thu.4",
+                "selection_method": "Other Than Lottery"
+            }
+        },
+        "professors": [
+            {
+                "name": {
+                    "ja": "吉高 まり",
+                    "en": "YOSHITAKA"
+                },
+                "department": {
+                    "ja": "特設科目",
+                    "en": "SPECIAL SUBJECTS"
+                }
+            }
+        ],
+        "available_years": [
+            "2025"
+        ]
+    },
+    {
+        "course_id": "29794",
+        "year": "2025",
+        "semester": "spring",
+        "translations": {
+            "ja": {
+                "name": "建築メディア論",
+                "field": "特設科目",
+                "credits": "2",
+                "semester": "2025 春",
+                "Classroom": "κ23",
+                "day_period": "水4",
+                "selection_method": "抽選"
+            },
+            "en": {
+                "name": "THEORY OF ARCHITECTURE AS MEDIA",
+                "field": "SPECIAL SUBJECTS",
+                "credits": "2",
+                "semester": "2025 Spring",
+                "Classroom": "κ23",
+                "day_period": "Wed.4",
+                "selection_method": "Lottery"
+            }
+        },
+        "professors": [
+            {
+                "name": {
+                    "ja": "白井 良邦",
+                    "en": "SHIRAI"
+                },
+                "department": {
+                    "ja": "特設科目",
+                    "en": "SPECIAL SUBJECTS"
+                }
+            }
+        ],
+        "available_years": [
+            "2025"
+        ]
+    },
+    {
+        "course_id": "33023",
+        "year": "2025",
+        "semester": "spring",
+        "translations": {
+            "ja": {
+                "name": "実践演習：ビジネスモデル分析(寄附講座)",
+                "field": "特設科目",
+                "credits": "2",
+                "semester": "2025 春",
+                "Classroom": "ι11",
+                "day_period": "月4",
+                "selection_method": "抽選以外"
+            },
+            "en": {
+                "name": "WORKSHOPS ON PRACTICAL BUSINESS MODEL ANALYSIS(Sponsored Course)",
+                "field": "SPECIAL SUBJECTS",
+                "credits": "2",
+                "semester": "2025 Spring",
+                "Classroom": "ι11",
+                "day_period": "Mon.4",
+                "selection_method": "Other Than Lottery"
+            }
+        },
+        "professors": [
+            {
+                "name": {
+                    "ja": "千葉 尚志",
+                    "en": "CHIBA"
+                },
+                "department": {
+                    "ja": "特設科目",
+                    "en": "SPECIAL SUBJECTS"
+                }
+            },
+            {
+                "name": {
+                    "ja": "琴坂 将広",
+                    "en": "TAKASHI; KOTOSAKA"
+                },
+                "department": {
+                    "ja": "特設科目",
+                    "en": "SPECIAL SUBJECTS"
+                }
+            }
+        ],
+        "available_years": [
+            "2025"
+        ]
+    },
+    {
+        "course_id": "18509",
+        "year": "2025",
+        "semester": "spring",
+        "translations": {
+            "ja": {
+                "name": "人工知能と政策論",
+                "field": "特設科目",
+                "credits": "2",
+                "semester": "2025 春",
+                "Classroom": "κ18",
+                "day_period": "金5",
+                "selection_method": "抽選"
+            },
+            "en": {
+                "name": "AI AND POLICY",
+                "field": "SPECIAL SUBJECTS",
+                "credits": "2",
+                "semester": "2025 Spring",
+                "Classroom": "κ18",
+                "day_period": "Fri.5",
+                "selection_method": "Lottery"
+            }
+        },
+        "professors": [
+            {
+                "name": {
+                    "ja": "海野 敦史",
+                    "en": "UMINO"
+                },
+                "department": {
+                    "ja": "特設科目",
+                    "en": "SPECIAL SUBJECTS"
+                }
+            }
+        ],
+        "available_years": [
+            "2025"
+        ]
+    },
+    {
+        "course_id": "29411",
+        "year": "2025",
+        "semester": "spring",
+        "translations": {
+            "ja": {
+                "name": "スチューデントビルドキャンパス（ＳＢＣ）実践（ランドスケープ）【学期前半】",
+                "field": "特設科目",
+                "credits": "2",
+                "semester": "2025 春(学期前半)",
+                "Classroom": "βﾄﾞｰﾑ",
+                "day_period": "金3,4",
+                "selection_method": "抽選以外"
+            },
+            "en": {
+                "name": "STUDENT BUILT CAMPUS (SBC) PRACTICE (LANDSCAPE)[1st half of semester]",
+                "field": "SPECIAL SUBJECTS",
+                "credits": "2",
+                "semester": "2025 Spring (1st Half)",
+                "Classroom": "βﾄﾞｰﾑ",
+                "day_period": "Fri.3,4",
+                "selection_method": "Other Than Lottery"
+            }
+        },
+        "professors": [
+            {
+                "name": {
+                    "ja": "石川 初",
+                    "en": "ISHIKAWA"
+                },
+                "department": {
+                    "ja": "特設科目",
+                    "en": "SPECIAL SUBJECTS"
+                }
+            },
+            {
+                "name": {
+                    "ja": "松川 昌平",
+                    "en": "HAJIME; MATSUKAWA"
+                },
+                "department": {
+                    "ja": "特設科目",
+                    "en": "SPECIAL SUBJECTS"
+                }
+            }
+        ],
+        "available_years": [
+            "2025"
+        ]
+    },
+    {
+        "course_id": "17058",
+        "year": "2025",
+        "semester": "spring",
+        "translations": {
+            "ja": {
+                "name": "スチューデントビルドキャンパス（ＳＢＣ）入門【学期前半】",
+                "field": "特設科目",
+                "credits": "2",
+                "semester": "2025 春(学期前半)",
+                "Classroom": "βﾄﾞｰﾑ",
+                "day_period": "金6,7",
+                "selection_method": "抽選以外"
+            },
+            "en": {
+                "name": "INTRODUCTION TO STUDENT BUILT CAMPUS(SBC)[1st half of semester]",
+                "field": "SPECIAL SUBJECTS",
+                "credits": "2",
+                "semester": "2025 Spring (1st Half)",
+                "Classroom": "βﾄﾞｰﾑ",
+                "day_period": "Fri.6,7",
+                "selection_method": "Other Than Lottery"
+            }
+        },
+        "professors": [
+            {
+                "name": {
+                    "ja": "小林 博人",
+                    "en": "KOBAYASHI"
+                },
+                "department": {
+                    "ja": "特設科目",
+                    "en": "SPECIAL SUBJECTS"
+                }
+            },
+            {
+                "name": {
+                    "ja": "石川 初",
+                    "en": "HIROTO; ISHIKAWA"
+                },
+                "department": {
+                    "ja": "特設科目",
+                    "en": "SPECIAL SUBJECTS"
+                }
+            },
+            {
+                "name": {
+                    "ja": "加藤 文俊",
+                    "en": "HAJIME; KATO"
+                },
+                "department": {
+                    "ja": "特設科目",
+                    "en": "SPECIAL SUBJECTS"
+                }
+            },
+            {
+                "name": {
+                    "ja": "松川 昌平",
+                    "en": "FUMITOSHI; MATSUKAWA"
+                },
+                "department": {
+                    "ja": "特設科目",
+                    "en": "SPECIAL SUBJECTS"
+                }
+            }
+        ],
+        "available_years": [
+            "2025"
+        ]
+    },
+    {
+        "course_id": "32907",
+        "year": "2025",
+        "semester": "spring",
+        "translations": {
+            "ja": {
+                "name": "生と命の多角的理解",
+                "field": "特設科目",
+                "credits": "2",
+                "semester": "2025 春",
+                "Classroom": "ι23",
+                "day_period": "火2",
+                "selection_method": "抽選以外"
+            },
+            "en": {
+                "name": "CROSS-DISCIPLINARY EXPLORATION OF LIFE AND LIVING",
+                "field": "SPECIAL SUBJECTS",
+                "credits": "2",
+                "semester": "2025 Spring",
+                "Classroom": "ι23",
+                "day_period": "Tue.2",
+                "selection_method": "Other Than Lottery"
+            }
+        },
+        "professors": [
+            {
+                "name": {
+                    "ja": "諏訪 正樹",
+                    "en": "SUWA"
+                },
+                "department": {
+                    "ja": "特設科目",
+                    "en": "SPECIAL SUBJECTS"
+                }
+            },
+            {
+                "name": {
+                    "ja": "内藤 泰宏",
+                    "en": "MASAKI; NAITO"
+                },
+                "department": {
+                    "ja": "特設科目",
+                    "en": "SPECIAL SUBJECTS"
+                }
+            }
+        ],
+        "available_years": [
+            "2025"
+        ]
+    },
+    {
+        "course_id": "20290",
+        "year": "2025",
+        "semester": "spring",
+        "translations": {
+            "ja": {
+                "name": "ソフトウェア技術を利用した創造的サービス構築論（基礎）(寄附講座)",
+                "field": "特設科目",
+                "credits": "2",
+                "semester": "2025 春",
+                "Classroom": "ι12",
+                "day_period": "火5",
+                "selection_method": "抽選以外"
+            },
+            "en": {
+                "name": "THEORY OF SERVICE CREATION BASED ON SOFTWARE TECHNOLOGY (BASIC)(Sponsored Course)",
+                "field": "SPECIAL SUBJECTS",
+                "credits": "2",
+                "semester": "2025 Spring",
+                "Classroom": "ι12",
+                "day_period": "Tue.5",
+                "selection_method": "Other Than Lottery"
+            }
+        },
+        "professors": [
+            {
+                "name": {
+                    "ja": "バンミーター， ロドニー Ｄ．",
+                    "en": "VAN METER"
+                },
+                "department": {
+                    "ja": "特設科目",
+                    "en": "SPECIAL SUBJECTS"
+                }
+            },
+            {
+                "name": {
+                    "ja": "岡田 和也",
+                    "en": "RODNEY D.; OKADA"
+                },
+                "department": {
+                    "ja": "特設科目",
+                    "en": "SPECIAL SUBJECTS"
+                }
+            },
+            {
+                "name": {
+                    "ja": "関谷 勇司",
+                    "en": "KAZUYA; SEKIYA"
+                },
+                "department": {
+                    "ja": "特設科目",
+                    "en": "SPECIAL SUBJECTS"
+                }
+            }
+        ],
+        "available_years": [
+            "2025"
+        ]
+    },
+    {
+        "course_id": "34015",
+        "year": "2025",
+        "semester": "spring",
+        "translations": {
+            "ja": {
+                "name": "地域産官学連携実践演習＜農から「生きる」を構築する＞",
+                "field": "特設科目",
+                "credits": "2",
+                "semester": "2025 春",
+                "Classroom": "βﾄﾞｰﾑ",
+                "day_period": "金5,6",
+                "selection_method": "抽選以外"
+            },
+            "en": {
+                "name": "PRACTICAL EXERCISES OF REGIONAL INDUSTRY-GOVERNMENT-ACADEMIA COLLABORATION",
+                "field": "SPECIAL SUBJECTS",
+                "credits": "2",
+                "semester": "2025 Spring",
+                "Classroom": "βﾄﾞｰﾑ",
+                "day_period": "Fri.5,6",
+                "selection_method": "Other Than Lottery"
+            }
+        },
+        "professors": [
+            {
+                "name": {
+                    "ja": "長谷部 葉子",
+                    "en": "HASEBE"
+                },
+                "department": {
+                    "ja": "特設科目",
+                    "en": "SPECIAL SUBJECTS"
+                }
+            }
+        ],
+        "available_years": [
+            "2025"
+        ]
+    },
+    {
+        "course_id": "48329",
+        "year": "2025",
+        "semester": "spring",
+        "translations": {
+            "ja": {
+                "name": "地域福祉",
+                "field": "特設科目",
+                "credits": "2",
+                "semester": "2025 春",
+                "Classroom": "ε22",
+                "day_period": "木4",
+                "selection_method": "抽選以外"
+            },
+            "en": {
+                "name": "COMMUNITY WORK AND COMMUNITY SOCIAL WORK",
+                "field": "SPECIAL SUBJECTS",
+                "credits": "2",
+                "semester": "2025 Spring",
+                "Classroom": "ε22",
+                "day_period": "Thu.4",
+                "selection_method": "Other Than Lottery"
+            }
+        },
+        "professors": [
+            {
+                "name": {
+                    "ja": "内山 映子",
+                    "en": "UCHIYAMA"
+                },
+                "department": {
+                    "ja": "特設科目",
+                    "en": "SPECIAL SUBJECTS"
+                }
+            }
+        ],
+        "available_years": [
+            "2025"
+        ]
+    },
+    {
+        "course_id": "30957",
+        "year": "2025",
+        "semester": "spring",
+        "translations": {
+            "ja": {
+                "name": "知識編纂の技法－１【学期後半】",
+                "field": "特設科目",
+                "credits": "2",
+                "semester": "2025 春(学期後半)",
+                "Classroom": "ο22",
+                "day_period": "水3,4",
+                "selection_method": "抽選以外"
+            },
+            "en": {
+                "name": "THE ART OF KNOWLEDGE COMPILATION-1[2nd half of semester]",
+                "field": "SPECIAL SUBJECTS",
+                "credits": "2",
+                "semester": "2025 Spring (2nd Half)",
+                "Classroom": "ο22",
+                "day_period": "Wed.3,4",
+                "selection_method": "Other Than Lottery"
+            }
+        },
+        "professors": [
+            {
+                "name": {
+                    "ja": "広野 彩子",
+                    "en": "HIRONO"
+                },
+                "department": {
+                    "ja": "特設科目",
+                    "en": "SPECIAL SUBJECTS"
+                }
+            }
+        ],
+        "available_years": [
+            "2025"
+        ]
+    },
+    {
+        "course_id": "17081",
+        "year": "2025",
+        "semester": "spring",
+        "translations": {
+            "ja": {
+                "name": "データ・ドリブン社会の創発と戦略",
+                "field": "特設科目",
+                "credits": "2",
+                "semester": "2025 春",
+                "Classroom": "Ω22",
+                "day_period": "木2",
+                "selection_method": "抽選以外"
+            },
+            "en": {
+                "name": "EMERGENCE OF DATA DRIVEN SOCIETY AND STRATEGY",
+                "field": "SPECIAL SUBJECTS",
+                "credits": "2",
+                "semester": "2025 Spring",
+                "Classroom": "Ω22",
+                "day_period": "Thu.2",
+                "selection_method": "Other Than Lottery"
+            }
+        },
+        "professors": [
+            {
+                "name": {
+                    "ja": "安宅 和人",
+                    "en": "ATAKA"
+                },
+                "department": {
+                    "ja": "特設科目",
+                    "en": "SPECIAL SUBJECTS"
+                }
+            }
+        ],
+        "available_years": [
+            "2025"
+        ]
+    },
+    {
+        "course_id": "17942",
+        "year": "2025",
+        "semester": "spring",
+        "translations": {
+            "ja": {
+                "name": "データ・ドリブン社会の創発と戦略（応用）",
+                "field": "特設科目",
+                "credits": "2",
+                "semester": "2025 春",
+                "Classroom": "ι23",
+                "day_period": "水2",
+                "selection_method": "抽選以外"
+            },
+            "en": {
+                "name": "EMERGENCE OF DATA DRIVEN SOCIETY AND STRATEGY (ADVANCED)",
+                "field": "SPECIAL SUBJECTS",
+                "credits": "2",
+                "semester": "2025 Spring",
+                "Classroom": "ι23",
+                "day_period": "Wed.2",
+                "selection_method": "Other Than Lottery"
+            }
+        },
+        "professors": [
+            {
+                "name": {
+                    "ja": "安宅 和人",
+                    "en": "ATAKA"
+                },
+                "department": {
+                    "ja": "特設科目",
+                    "en": "SPECIAL SUBJECTS"
+                }
+            }
+        ],
+        "available_years": [
+            "2025"
+        ]
+    },
+    {
+        "course_id": "47375",
+        "year": "2025",
+        "semester": "spring",
+        "translations": {
+            "ja": {
+                "name": "日本の防衛政策",
+                "field": "特設科目",
+                "credits": "2",
+                "semester": "2025 春",
+                "Classroom": "Ω11",
+                "day_period": "月4",
+                "selection_method": "抽選以外"
+            },
+            "en": {
+                "name": "JAPAN'S DEFENSE POLICY",
+                "field": "SPECIAL SUBJECTS",
+                "credits": "2",
+                "semester": "2025 Spring",
+                "Classroom": "Ω11",
+                "day_period": "Mon.4",
+                "selection_method": "Other Than Lottery"
+            }
+        },
+        "professors": [
+            {
+                "name": {
+                    "ja": "島田 和久",
+                    "en": "SHIMADA"
+                },
+                "department": {
+                    "ja": "特設科目",
+                    "en": "SPECIAL SUBJECTS"
+                }
+            }
+        ],
+        "available_years": [
+            "2025"
+        ]
+    },
+    {
+        "course_id": "17574",
+        "year": "2025",
+        "semester": "spring",
+        "translations": {
+            "ja": {
+                "name": "人間工学デザインとテクノロジー(GIGA)",
+                "field": "特設科目",
+                "credits": "2",
+                "semester": "2025 春",
+                "Classroom": "ι18",
+                "day_period": "木2",
+                "selection_method": ""
+            },
+            "en": {
+                "name": "ERGONOMIC DESIGN AND TECHNOLOGY(GIGA)",
+                "field": "SPECIAL SUBJECTS",
+                "credits": "2",
+                "semester": "2025 Spring",
+                "Classroom": "ι18",
+                "day_period": "Thu.2",
+                "selection_method": ""
+            }
+        },
+        "professors": [
+            {
+                "name": {
+                    "ja": "アルマンスール， アフマド",
+                    "en": "ALMANSOUR"
+                },
+                "department": {
+                    "ja": "特設科目",
+                    "en": "SPECIAL SUBJECTS"
+                }
+            }
+        ],
+        "available_years": [
+            "2025"
+        ]
+    },
+    {
+        "course_id": "20209",
+        "year": "2025",
+        "semester": "spring",
+        "translations": {
+            "ja": {
+                "name": "働くこととジェンダー",
+                "field": "特設科目",
+                "credits": "2",
+                "semester": "2025 春",
+                "Classroom": "ε22",
+                "day_period": "木2",
+                "selection_method": "抽選以外"
+            },
+            "en": {
+                "name": "WORK AND GENDER",
+                "field": "SPECIAL SUBJECTS",
+                "credits": "2",
+                "semester": "2025 Spring",
+                "Classroom": "ε22",
+                "day_period": "Thu.2",
+                "selection_method": "Other Than Lottery"
+            }
+        },
+        "professors": [
+            {
+                "name": {
+                    "ja": "高橋 裕子",
+                    "en": "TAKAHASHI"
+                },
+                "department": {
+                    "ja": "特設科目",
+                    "en": "SPECIAL SUBJECTS"
+                }
+            }
+        ],
+        "available_years": [
+            "2025"
+        ]
+    },
+    {
+        "course_id": "31475",
+        "year": "2025",
+        "semester": "spring",
+        "translations": {
+            "ja": {
+                "name": "不動産デザイン１(寄附講座)",
+                "field": "特設科目",
+                "credits": "2",
+                "semester": "2025 春",
+                "Classroom": "λ23",
+                "day_period": "月4",
+                "selection_method": "抽選以外"
+            },
+            "en": {
+                "name": "REAL ESTATE DESIGN 1(Sponsored Course)",
+                "field": "SPECIAL SUBJECTS",
+                "credits": "2",
+                "semester": "2025 Spring",
+                "Classroom": "λ23",
+                "day_period": "Mon.4",
+                "selection_method": "Other Than Lottery"
+            }
+        },
+        "professors": [
+            {
+                "name": {
+                    "ja": "小林 博人",
+                    "en": "KOBAYASHI"
+                },
+                "department": {
+                    "ja": "特設科目",
+                    "en": "SPECIAL SUBJECTS"
+                }
+            },
+            {
+                "name": {
+                    "ja": "上田 真路",
+                    "en": "HIROTO; UETA"
+                },
+                "department": {
+                    "ja": "特設科目",
+                    "en": "SPECIAL SUBJECTS"
+                }
+            }
+        ],
+        "available_years": [
+            "2025"
+        ]
+    },
+    {
+        "course_id": "28544",
+        "year": "2025",
+        "semester": "spring",
+        "translations": {
+            "ja": {
+                "name": "メディアアート実践",
+                "field": "特設科目",
+                "credits": "2",
+                "semester": "2025 春",
+                "Classroom": "τ12",
+                "day_period": "金4",
+                "selection_method": "抽選以外"
+            },
+            "en": {
+                "name": "DIGITAL ART -INTRODUCTION AND PRACTICE",
+                "field": "SPECIAL SUBJECTS",
+                "credits": "2",
+                "semester": "2025 Spring",
+                "Classroom": "τ12",
+                "day_period": "Fri.4",
+                "selection_method": "Other Than Lottery"
+            }
+        },
+        "professors": [
+            {
+                "name": {
+                    "ja": "脇田 玲",
+                    "en": "WAKITA"
+                },
+                "department": {
+                    "ja": "特設科目",
+                    "en": "SPECIAL SUBJECTS"
+                }
+            }
+        ],
+        "available_years": [
+            "2025"
+        ]
+    },
+    {
+        "course_id": "23739",
+        "year": "2025",
+        "semester": "spring",
+        "translations": {
+            "ja": {
+                "name": "労働政策",
+                "field": "特設科目",
+                "credits": "2",
+                "semester": "2025 春",
+                "Classroom": "ο16",
+                "day_period": "火2",
+                "selection_method": "抽選以外"
+            },
+            "en": {
+                "name": "LABOR POLICY",
+                "field": "SPECIAL SUBJECTS",
+                "credits": "2",
+                "semester": "2025 Spring",
+                "Classroom": "ο16",
+                "day_period": "Tue.2",
+                "selection_method": "Other Than Lottery"
+            }
+        },
+        "professors": [
+            {
+                "name": {
+                    "ja": "高橋 裕子",
+                    "en": "TAKAHASHI"
+                },
+                "department": {
+                    "ja": "特設科目",
+                    "en": "SPECIAL SUBJECTS"
+                }
+            }
+        ],
+        "available_years": [
+            "2025"
+        ]
     }
 ]

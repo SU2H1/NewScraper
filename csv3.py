@@ -32,7 +32,7 @@ OUTPUT_JSON_FILE = 'syllabus_data.json' # 出力JSONファイル名
 TARGET_FIELDS = ["基盤科目", "先端科目", "特設科目"] # スクレイピング対象の分野
 TARGET_YEARS = [2025, 2024, 2023] # スクレイピング対象の年度
 # ★★★ パフォーマンス向上のため、Trueに設定することを推奨 ★★★
-HEADLESS_MODE = True # Trueにするとヘッドレスモードで実行
+HEADLESS_MODE = False # Trueにするとヘッドレスモードで実行
 PAGE_LOAD_TIMEOUT = 45 # ページの読み込みタイムアウト時間(秒)
 ELEMENT_WAIT_TIMEOUT = 60 # 要素が表示されるまでの最大待機時間(秒)
 # ★★★ 待機時間を短縮して速度向上を試みる ★★★
@@ -182,57 +182,101 @@ def click_element(driver, element, wait_time=SHORT_WAIT): # SHORT_WAITを使用
 def select_option_by_text(driver, select_element, option_text, fallback_to_js=True):
     """Select要素のオプションをテキストで選択する (失敗時はJavaScriptで試行)"""
     try:
+        # 強制スクロールと表示確認
+        driver.execute_script("arguments[0].scrollIntoView({block: 'center'});", select_element)
+        driver.execute_script(
+            "if(arguments[0].offsetWidth === 0 || arguments[0].offsetHeight === 0 || "
+            "window.getComputedStyle(arguments[0]).visibility === 'hidden' || "
+            "window.getComputedStyle(arguments[0]).display === 'none') {"
+            "arguments[0].style.display = 'block'; "
+            "arguments[0].style.visibility = 'visible';"
+            "}", 
+            select_element
+        )
+        time.sleep(1)
+        
+        # 選択試行
         select_obj = Select(select_element)
         select_obj.select_by_visible_text(option_text)
-        time.sleep(0.3)
-        # 選択が反映されたか確認
+        time.sleep(1)
+        
+        # 選択確認
         selected_option = Select(select_element).first_selected_option
         if selected_option.text.strip() == option_text:
             return True
         else:
-            # Seleniumでの選択が正しく反映されなかった場合
             raise Exception("Selection did not reflect correctly via Selenium.")
     except Exception as e:
         # Seleniumでの選択失敗時、JSフォールバック
         if fallback_to_js:
             print(f"           Seleniumでの'{option_text}'選択失敗({e})。JavaScriptで試行...")
             try:
-                # JavaScriptでテキストが一致するオプションを選択し、change/inputイベントを発火
-                js_script = f"""
-                    let select = arguments[0]; let optionText = arguments[1];
-                    for(let i = 0; i < select.options.length; i++) {{
-                        if(select.options[i].text.trim() === optionText) {{
-                            select.selectedIndex = i;
-                            // イベントを発火させて変更を通知
-                            select.dispatchEvent(new Event('change', {{ bubbles: true }}));
-                            select.dispatchEvent(new Event('input', {{ bubbles: true }}));
-                            return true; // 選択成功
-                        }}
-                    }}
-                    return false; // 該当オプションなし
+                # 強化されたJavaScriptでのオプション選択
+                js_script = """
+                    // セレクト要素の表示を確保
+                    arguments[0].style.display = 'block';
+                    arguments[0].style.visibility = 'visible';
+                    arguments[0].scrollIntoView({block: 'center'});
+                    
+                    // 全オプションをコンソールに表示
+                    console.log('利用可能なオプション:');
+                    for(let i = 0; i < arguments[0].options.length; i++) {
+                        console.log(`${i}: ${arguments[0].options[i].text.trim()}`);
+                    }
+                    
+                    // オプションテキストの完全一致検索
+                    let found = false;
+                    for(let i = 0; i < arguments[0].options.length; i++) {
+                        if(arguments[0].options[i].text.trim() === arguments[1]) {
+                            arguments[0].selectedIndex = i;
+                            arguments[0].dispatchEvent(new Event('change', { bubbles: true }));
+                            arguments[0].dispatchEvent(new Event('input', { bubbles: true }));
+                            console.log(`オプション "${arguments[1]}" を選択しました (インデックス: ${i})`);
+                            found = true;
+                            break;
+                        }
+                    }
+                    
+                    // 完全一致で見つからない場合は部分一致も試行
+                    if(!found) {
+                        for(let i = 0; i < arguments[0].options.length; i++) {
+                            if(arguments[0].options[i].text.trim().includes(arguments[1])) {
+                                arguments[0].selectedIndex = i;
+                                arguments[0].dispatchEvent(new Event('change', { bubbles: true }));
+                                arguments[0].dispatchEvent(new Event('input', { bubbles: true }));
+                                console.log(`部分一致: オプション "${arguments[0].options[i].text.trim()}" を選択しました (インデックス: ${i})`);
+                                found = true;
+                                break;
+                            }
+                        }
+                    }
+                    
+                    return found;
                 """
                 result = driver.execute_script(js_script, select_element, option_text)
+                
                 if result:
-                    time.sleep(0.5) # JS実行後の待機
-                    # JSで選択したテキストが正しいか確認
-                    selected_option_text_js = driver.execute_script("return arguments[0].options[arguments[0].selectedIndex].text.trim();", select_element)
-                    if selected_option_text_js == option_text:
-                        print(f"           JavaScriptで'{option_text}'選択成功。")
-                        return True
-                    else:
-                        print(f"           JavaScript選択後のテキスト不一致 (Expected: '{option_text}', Got: '{selected_option_text_js}')")
-                        return False
-                else:
-                    print(f"           JavaScriptで'{option_text}'のオプションが見つかりませんでした。")
-                    return False
-            except (InvalidSessionIdException, NoSuchWindowException) as e_session:
-                print(f"           JS選択中にセッション/ウィンドウエラー: {e_session}")
-                raise # 致命的なエラー
+                    time.sleep(1.5)
+                    # 選択が成功したか確認
+                    try:
+                        selected_text = driver.execute_script(
+                            "return arguments[0].options[arguments[0].selectedIndex].text.trim();", 
+                            select_element
+                        )
+                        if selected_text == option_text or option_text in selected_text:
+                            print(f"           JavaScriptで'{selected_text}'選択成功。")
+                            return True
+                        else:
+                            print(f"           JavaScript選択後のテキスト不一致 (Expected: '{option_text}', Got: '{selected_text}')")
+                    except Exception as e_verify:
+                        print(f"           選択確認中にエラー: {e_verify}")
+                
+                # セレクト要素を更新して再取得
+                return False
             except Exception as js_error:
                 print(f"           JavaScriptによる選択中にエラー: {js_error}")
                 return False
         else:
-            # JSフォールバックが無効な場合
             print(f"           Seleniumでの'{option_text}'選択失敗、JSフォールバック無効。")
             return False
 
@@ -891,13 +935,20 @@ def initialize_driver(driver_path, headless=False):
     """WebDriver (Chrome) を初期化する"""
     print("\nWebDriverを初期化しています...")
     options = webdriver.ChromeOptions()
-    options.page_load_strategy = 'normal' # ページの読み込み戦略 (normal, eager, none)
-
-    # ヘッドレスモード設定
+    options.page_load_strategy = 'normal'
+    
+    # パスワード保存ダイアログを無効化
+    options.add_argument('--password-store=basic')
+    options.add_experimental_option('prefs', {
+        'credentials_enable_service': False,
+        'profile.password_manager_enabled': False
+    })
+    
+    # 既存のオプション設定
     if headless:
         options.add_argument('--headless')
-        options.add_argument('--disable-gpu') # GPU無効化 (ヘッドレスで推奨)
-        options.add_argument('--window-size=1920,1080') # ウィンドウサイズ指定
+        options.add_argument('--disable-gpu')
+        options.add_argument('--window-size=1920,1080')
         print("ヘッドレスモードで実行します。")
 
     # 一般的なオプション (安定性向上、自動化検出回避など)
@@ -1054,15 +1105,86 @@ if __name__ == "__main__":
                     print(f"   年度 '{year}' を選択しました。")
                     time.sleep(SHORT_WAIT) # ★★★ 選択後の待機時間をSHORT_WAITに ★★★
 
+# --- 詳細オプションの展開 (分野選択用) ---
+                    try:
+                        advanced_options_button = WebDriverWait(driver, SHORT_WAIT).until(
+                            EC.element_to_be_clickable((By.XPATH, "//button[contains(@data-target, 'screensearch-cond-option-toggle-target')]"))
+                        )
+                        if advanced_options_button:
+                            print("   展開ボタンをクリックして詳細オプションを表示します。")
+                            driver.execute_script("arguments[0].scrollIntoView({block: 'center'});", advanced_options_button)
+                            time.sleep(1)
+                            driver.execute_script("arguments[0].click();", advanced_options_button)
+                            time.sleep(2)  # Wait for animation to complete
+                    except Exception as e:
+                        print(f"   詳細オプション展開ボタンの操作中にエラー: {e}")
+                        # Continue anyway - the options might already be expanded
+
                     # --- 分野選択 ---
                     field_select_xpath = "//select[@name='KEYWORD_FLD1CD']"
-                    field_select_element = WebDriverWait(driver, ELEMENT_WAIT_TIMEOUT).until(EC.presence_of_element_located((By.XPATH, field_select_xpath)))
-                    if not select_option_by_text(driver, field_select_element, field_name):
-                        print(f"     [警告] 分野 '{field_name}' の選択に失敗。スキップします。")
+                    max_retries = 3
+                    for retry in range(max_retries):
+                        try:
+                            # 強制的にページをリフレッシュしてから再試行
+                            if retry > 0:
+                                driver.refresh()
+                                WebDriverWait(driver, ELEMENT_WAIT_TIMEOUT).until(
+                                    EC.presence_of_element_located((By.TAG_NAME, "body"))
+                                )
+                                time.sleep(MEDIUM_WAIT)
+                                
+                                # 年度を再選択
+                                year_select_xpath = "//select[@name='KEYWORD_TTBLYR']"
+                                year_select_element = WebDriverWait(driver, ELEMENT_WAIT_TIMEOUT).until(
+                                    EC.element_to_be_clickable((By.XPATH, year_select_xpath))
+                                )
+                                select_option_by_text(driver, year_select_element, str(year))
+                                time.sleep(MEDIUM_WAIT)
+                            
+                            # 要素が表示されクリック可能になるまで確実に待機
+                            field_select_element = WebDriverWait(driver, ELEMENT_WAIT_TIMEOUT).until(
+                                EC.element_to_be_clickable((By.XPATH, field_select_xpath))
+                            )
+                            
+                            # 画面中央に要素を確実にスクロール
+                            driver.execute_script(
+                                "arguments[0].scrollIntoView({block: 'center', behavior: 'smooth'});", 
+                                field_select_element
+                            )
+                            time.sleep(1.5)  # スクロール完了を待機
+                            
+                            # 要素の表示状態とスタイルをチェック
+                            is_displayed = driver.execute_script(
+                                "return (arguments[0].offsetWidth > 0 && arguments[0].offsetHeight > 0 && "
+                                "window.getComputedStyle(arguments[0]).visibility !== 'hidden' && "
+                                "window.getComputedStyle(arguments[0]).display !== 'none');", 
+                                field_select_element
+                            )
+                            
+                            if not is_displayed:
+                                print(f"   要素が非表示状態です (試行 {retry+1}/{max_retries})。表示を試みます...")
+                                driver.execute_script(
+                                    "arguments[0].style.display = 'block'; arguments[0].style.visibility = 'visible';", 
+                                    field_select_element
+                                )
+                                time.sleep(1)
+                            
+                            # 選択実行
+                            if select_option_by_text(driver, field_select_element, field_name):
+                                print(f"   分野 '{field_name}' を選択しました。")
+                                time.sleep(MEDIUM_WAIT)
+                                break
+                            else:
+                                print(f"   分野 '{field_name}' の選択に失敗（試行 {retry+1}/{max_retries}）")
+                        except Exception as e:
+                            print(f"   リトライ {retry+1}/{max_retries}: 分野 '{field_name}' 選択中にエラー: {e}")
+                            time.sleep(MEDIUM_WAIT)
+                    else:
+                        # すべてのリトライが失敗した場合
+                        print(f"     [警告] 分野 '{field_name}' の選択が {max_retries} 回失敗しました。スキップします。")
                         save_screenshot(driver, f"field_selection_failed_{field_name}_{year}", screenshots_dir)
-                        field_index += 1; continue # 次の分野へ
-                    print(f"   分野 '{field_name}' を選択しました。")
-                    time.sleep(SHORT_WAIT) # ★★★ 選択後の待機時間をSHORT_WAITに ★★★
+                        field_index += 1
+                        continue  # 次の分野へ
 
 
                     # --- 学年チェックボックス処理 (3年を解除) ---
@@ -1376,8 +1498,9 @@ if __name__ == "__main__":
 
                     # --- ページネーションループ終了 ---
                     if not field_processed_successfully:
-                         print(f"--- 分野 {field_name} ({year}年度) 処理中にエラーが発生したため中断 ---")
-                         # エラーが発生した場合、この分野の処理は失敗
+                        print(f"--- 分野 {field_name} ({year}年度) 処理中にエラーが発生したため中断 ---")
+                        # エラーが発生した場合、この分野の処理は失敗
+                        field_processed_successfully = False # この行は念のため追加
 
 
                 # --- 分野ループの try...except...finally ---
@@ -1433,6 +1556,9 @@ if __name__ == "__main__":
                             print("\n--- JSONファイル更新 (エラー発生時点) ---")
                             final_data = aggregate_syllabus_data(scraped_data_all_years)
                             write_json_data(final_data, output_json_path)
+                    
+                    # field_indexを更新するかどうかの判定を修正 (このコードブロック内で既に+1した場合は不要)
+                    # ループの末尾でインクリメントされる場合は、ここでは何もしない
 
                     # 次の分野へ
                     field_index += 1
