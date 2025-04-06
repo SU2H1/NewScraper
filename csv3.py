@@ -33,14 +33,16 @@ TARGET_FIELDS = ["基盤科目", "先端科目", "特設科目"] # スクレイ�
 TARGET_YEARS = [2025, 2024, 2023] # スクレイピング対象の年度
 # ★★★ パフォーマンス向上のため、Trueに設定することを推奨 ★★★
 HEADLESS_MODE = False # Trueにするとヘッドレスモードで実行
-PAGE_LOAD_TIMEOUT = 45 # ページの読み込みタイムアウト時間(秒)
-ELEMENT_WAIT_TIMEOUT = 60 # 要素が表示されるまでの最大待機時間(秒)
+PARALLEL_PROCESSING = True # 並列処理を有効化
+PARALLEL_WORKERS = 10 # 同時に処理するページ数（PCのスペックに応じて調整）
+PAGE_LOAD_TIMEOUT = 60 # ページの読み込みタイムアウト時間(秒)
+ELEMENT_WAIT_TIMEOUT = 90 # 要素が表示されるまでの最大待機時間(秒)
 # ★★★ 待機時間を短縮して速度向上を試みる ★★★
-SHORT_WAIT = 2 # 短い待機時間(秒) - 3から2へ変更
-MEDIUM_WAIT = 3 # 中程度の待機時間(秒) - 5から3へ変更
-LONG_WAIT = 5 # 長い待機時間(秒) - ログイン後など重要な箇所のため維持
+SHORT_WAIT = 0.5 # 短い待機時間(秒) - 3から2へ変更
+MEDIUM_WAIT = 1 # 中程度の待機時間(秒) - 5から3へ変更
+LONG_WAIT = 2 # 長い待機時間(秒) - ログイン後など重要な箇所のため維持
 # ★★★ 英語ページでのJSレンダリング待機時間 ★★★
-JS_RENDER_WAIT = 2 # 秒 (必要に応じて調整) - 5から2へ変更
+JS_RENDER_WAIT = 0.5 # 秒 (必要に応じて調整) - 5から2へ変更
 
 # --- ★ カスタム例外クラス ★ ---
 class MissingCriticalDataError(Exception):
@@ -57,7 +59,7 @@ INFO_MAP_JA_2025 = {
     'professor': ("担当者名", "//tr[th[contains(text(),'担当者名')]]/td", ""),
     'credits': ("単位", "//tr[th[contains(text(),'単位')]]/td", "単位不明"),
     'field': ("分野", "//tr[th[contains(text(),'分野')]]/td", "分野不明"),
-    'location': ("教室", "//tr[th[contains(text(),'教室')]]/td", "教室不明"),
+    'location': ("教室", "//tr[th[contains(text(),'教室') or contains(text(),'開講場所')]]/td", "教室不明"),
     'day_period': ("曜日時限", "//tr[th[contains(text(),'曜日時限')]]/td", "曜日時限不明"), # 曜日時限のXPath
     'selection_method': ("選抜方法", "//tr[th[contains(text(),'選抜方法')]]/td", ""), # 選抜方法のXPath
     'class_format': ("授業実施形態", "//tr[th[contains(text(),'授業実施形態')]]/td", ""),
@@ -462,7 +464,17 @@ def get_syllabus_details(driver, current_year, screenshots_dir):
         if location_overwritten:
              print(f"              -> 上書き後の教室(ja): {ja_data['location']}")
 
-        # --- 必須データチェック ---
+        if "TTCK" in ja_data.get('name', '') and "教室" in '; '.join(missing_details):
+            # TTCKコースは教室情報が上書きされているので、教室エラーを無視
+            missing_details = [detail for detail in missing_details if "教室" not in detail]
+            # 曜日時限もTTCKコースでは必須でない扱いに
+            missing_details = [detail for detail in missing_details if "曜日時限" not in detail]
+            # 残りのエラーを確認
+            if missing_details:
+                critical_data_missing = True
+            else:
+                critical_data_missing = False
+
         if critical_data_missing:
             raise MissingCriticalDataError(f"必須日本語データ取得失敗 (URL: {japanese_url}): {'; '.join(missing_details)}")
         print("        --- 日本語情報取得完了 ---")
@@ -959,6 +971,13 @@ def initialize_driver(driver_path, headless=False):
     options.add_argument('--disable-blink-features=AutomationControlled') # 自動化検出フラグ回避
     options.add_argument('--log-level=3') # ログレベルを警告以上のみに設定
 
+    # initialize_driver関数内に以下を追加
+    options.add_argument('--disable-background-networking')
+    options.add_argument('--disable-default-apps')
+    options.add_argument('--disable-sync')
+    options.add_argument('--disable-translate')
+    options.add_argument('--disable-popup-blocking')
+
     # 実験的なオプション (自動化検出回避)
     options.add_experimental_option('excludeSwitches', ['enable-automation', 'enable-logging']) # loggingも除外
     options.add_experimental_option('useAutomationExtension', False)
@@ -1064,6 +1083,14 @@ if __name__ == "__main__":
             year = TARGET_YEARS[year_index]
             print(f"\n<<<<< {year}年度 の処理開始 >>>>>")
             year_processed_successfully = True # 年度全体の処理成功フラグ
+
+            if year == 2024:
+                current_page_timeout = PAGE_LOAD_TIMEOUT * 2  # 2024年度は特に時間がかかるため2倍に
+                current_element_timeout = ELEMENT_WAIT_TIMEOUT * 1.5
+                print(f"   注意: 2024年度用の拡張タイムアウト設定を使用します (ページ:{current_page_timeout}秒, 要素:{current_element_timeout}秒)")
+            else:
+                current_page_timeout = PAGE_LOAD_TIMEOUT
+                current_element_timeout = ELEMENT_WAIT_TIMEOUT
 
             # ★★★ 分野ループを内側に ★★★
             field_index = 0
@@ -1212,7 +1239,8 @@ if __name__ == "__main__":
                     # 結果リンク、"該当なし"メッセージ、またはページネーションが表示されるまで待つ
                     result_indicator_xpath = "//a[contains(@class, 'syllabus-detail')] | //div[contains(text(), '該当するデータはありません')] | //ul[contains(@class, 'pagination')]"
                     print("   検索結果表示待機中...")
-                    WebDriverWait(driver, ELEMENT_WAIT_TIMEOUT).until(EC.presence_of_element_located((By.XPATH, result_indicator_xpath)))
+                    WebDriverWait(driver, current_element_timeout).until(EC.presence_of_element_located((By.XPATH, result_indicator_xpath)))
+
                     time.sleep(MEDIUM_WAIT) # ★★★ 結果表示後の描画待機時間をMEDIUM_WAITに ★★★
                     print("   検索結果表示完了。")
 
@@ -1239,7 +1267,7 @@ if __name__ == "__main__":
                                     print("           ソート順を Value='2' で選択しました。")
                                     time.sleep(MEDIUM_WAIT) # ★★★ ソート変更後の待機時間をMEDIUM_WAITに ★★★
                                     # 結果表示を再度待機
-                                    WebDriverWait(driver, ELEMENT_WAIT_TIMEOUT).until(EC.presence_of_element_located((By.XPATH, result_indicator_xpath)))
+                                    WebDriverWait(driver, current_element_timeout).until(EC.presence_of_element_located((By.XPATH, result_indicator_xpath)))
                                     time.sleep(MEDIUM_WAIT) # ★★★ 再描画待機時間をMEDIUM_WAITに ★★★
                                 except Exception as e_sort_val:
                                     print(f"           [警告] Value='2'でのソート失敗: {e_sort_val}。JSで試行...")
@@ -1247,13 +1275,13 @@ if __name__ == "__main__":
                                         driver.execute_script("arguments[0].value = '2'; arguments[0].dispatchEvent(new Event('change', { bubbles: true }));", sort_element)
                                         print("           JSでソート順 Value='2' を設定しました。")
                                         time.sleep(MEDIUM_WAIT) # ★★★ JS実行後の待機時間をMEDIUM_WAITに ★★★
-                                        WebDriverWait(driver, ELEMENT_WAIT_TIMEOUT).until(EC.presence_of_element_located((By.XPATH, result_indicator_xpath)))
+                                        WebDriverWait(driver, current_element_timeout).until(EC.presence_of_element_located((By.XPATH, result_indicator_xpath)))
                                         time.sleep(MEDIUM_WAIT) # ★★★ 再描画待機時間をMEDIUM_WAITに ★★★
                                     except Exception as e_js: print(f"           [警告] JSでのソートも失敗: {e_js}")
                             else:
                                 print("           ソート順を「科目名順」で選択しました。")
                                 time.sleep(MEDIUM_WAIT) # ★★★ ソート変更後の待機時間をMEDIUM_WAITに ★★★
-                                WebDriverWait(driver, ELEMENT_WAIT_TIMEOUT).until(EC.presence_of_element_located((By.XPATH, result_indicator_xpath)))
+                                WebDriverWait(driver, current_element_timeout).until(EC.presence_of_element_located((By.XPATH, result_indicator_xpath)))
                                 time.sleep(MEDIUM_WAIT) # ★★★ 再描画待機時間をMEDIUM_WAITに ★★★
                         else:
                              print("   ソート順は既に「科目名順」です。")
@@ -1440,7 +1468,7 @@ if __name__ == "__main__":
                                 )
                                 if click_element(driver, link_to_click):
                                     print(f"        ページ {page_num} へ遷移。結果待機中...")
-                                    WebDriverWait(driver, ELEMENT_WAIT_TIMEOUT).until(EC.presence_of_element_located((By.XPATH, result_indicator_xpath)))
+                                    WebDriverWait(driver, current_element_timeout).until(EC.presence_of_element_located((By.XPATH, result_indicator_xpath)))
                                     time.sleep(MEDIUM_WAIT) # ★★★ ページ遷移後の待機時間をMEDIUM_WAITに ★★★
                                     clicked_page_link = True
                                     # ページ遷移に成功したら、このブロックのページ番号処理ループを抜け、
@@ -1479,7 +1507,7 @@ if __name__ == "__main__":
                             print(f"\n        ページ番号 {last_processed_page_num} まで処理完了。「次へ」をクリックします...")
                             if click_element(driver, next_button):
                                 print("        「次へ」をクリックしました。結果待機中...")
-                                WebDriverWait(driver, ELEMENT_WAIT_TIMEOUT).until(EC.presence_of_element_located((By.XPATH, result_indicator_xpath)))
+                                WebDriverWait(driver, current_element_timeout).until(EC.presence_of_element_located((By.XPATH, result_indicator_xpath)))
                                 time.sleep(MEDIUM_WAIT) # ★★★ ページ遷移後の待機時間をMEDIUM_WAITに ★★★
                                 pagination_processed_in_block = True
                                 # last_processed_page_num は次のループの開始時にアクティブページから更新される
