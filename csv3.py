@@ -25,20 +25,22 @@ from urllib.parse import urlparse, parse_qs, urlencode, urlunparse
 
 # --- グローバル変数・設定 ---
 CHROME_DRIVER_PATH = None # ChromeDriverのパス (Noneの場合は自動検出)
-USER_EMAIL = 'Email' # ログインに使用するメールアドレス
-USER_PASSWORD = 'Password' # ログインに使用するパスワード
+USER_EMAIL = 'kaitosumishi@keio.jp' # ログインに使用するメールアドレス
+USER_PASSWORD = '0528QBSkaito' # ログインに使用するパスワード
 OUTPUT_DIR_NAME = 'syllabus_output' # 出力ディレクトリ名
 OUTPUT_JSON_FILE = 'syllabus_data.json' # 出力JSONファイル名
 TARGET_FIELDS = ["基盤科目", "先端科目", "特設科目"] # スクレイピング対象の分野
 TARGET_YEARS = [2025, 2024, 2023] # スクレイピング対象の年度
-HEADLESS_MODE = False # Trueにするとヘッドレスモードで実行
+# ★★★ パフォーマンス向上のため、Trueに設定することを推奨 ★★★
+HEADLESS_MODE = True # Trueにするとヘッドレスモードで実行
 PAGE_LOAD_TIMEOUT = 45 # ページの読み込みタイムアウト時間(秒)
 ELEMENT_WAIT_TIMEOUT = 60 # 要素が表示されるまでの最大待機時間(秒)
-SHORT_WAIT = 3 # 短い待機時間(秒)
-MEDIUM_WAIT = 5 # 中程度の待機時間(秒)
-LONG_WAIT = 10 # 長い待機時間(秒)
+# ★★★ 待機時間を短縮して速度向上を試みる ★★★
+SHORT_WAIT = 2 # 短い待機時間(秒) - 3から2へ変更
+MEDIUM_WAIT = 3 # 中程度の待機時間(秒) - 5から3へ変更
+LONG_WAIT = 5 # 長い待機時間(秒) - ログイン後など重要な箇所のため維持
 # ★★★ 英語ページでのJSレンダリング待機時間 ★★★
-JS_RENDER_WAIT = 5 # 秒 (必要に応じて調整)
+JS_RENDER_WAIT = 2 # 秒 (必要に応じて調整) - 5から2へ変更
 
 # --- ★ カスタム例外クラス ★ ---
 class MissingCriticalDataError(Exception):
@@ -149,7 +151,7 @@ def normalize_text(text):
         return text.strip()
     return ""
 
-def click_element(driver, element, wait_time=SHORT_WAIT):
+def click_element(driver, element, wait_time=SHORT_WAIT): # SHORT_WAITを使用
     """要素をクリックする (失敗時はJavaScriptで試行)"""
     try:
         WebDriverWait(driver, wait_time).until(EC.element_to_be_clickable(element))
@@ -240,6 +242,7 @@ def get_text_by_xpath(driver, xpath, default=""):
     if not xpath:
         return default
     try:
+        # ★★★ 要素待機時間をSHORT_WAITに変更 ★★★
         element = WebDriverWait(driver, SHORT_WAIT).until(
             EC.presence_of_element_located((By.XPATH, xpath))
         )
@@ -307,12 +310,13 @@ def extract_season(semester_text):
     return "unknown"
 
 
-# --- ★★★ get_syllabus_details 関数の修正 (JA/EN XPath分離) ★★★ ---
+# --- ★★★ get_syllabus_details 関数の修正 ★★★ ---
 def get_syllabus_details(driver, current_year, screenshots_dir):
     """
     シラバス詳細ページから指定された日本語と英語の情報を取得。
     日本語ページと英語ページを個別に処理し、それぞれの言語の情報を格納する。
     年度に応じて適切なXPathマップを使用する。
+    ★★★ 修正: オンライン授業の場合、locationを強制的に上書き ★★★
     """
     ja_data = {} # 日本語ページから取得したデータ
     en_data = {} # 英語ページから取得したデータ
@@ -331,8 +335,9 @@ def get_syllabus_details(driver, current_year, screenshots_dir):
     try:
         japanese_url = driver.current_url # 現在のURL (日本語版のはず)
         print(f"        日本語ページ処理中: {japanese_url}")
+        # ★★★ 待機時間をMEDIUM_WAITに変更 ★★★
         WebDriverWait(driver, ELEMENT_WAIT_TIMEOUT).until(EC.presence_of_element_located((By.TAG_NAME, "body")))
-        time.sleep(MEDIUM_WAIT)
+        time.sleep(MEDIUM_WAIT) # 描画待機時間をMEDIUM_WAITに
 
         # --- Course ID 取得 (URL -> XPathフォールバック) ---
         print("           日本語 登録番号 取得試行...")
@@ -397,15 +402,23 @@ def get_syllabus_details(driver, current_year, screenshots_dir):
                         critical_data_missing = True
                         missing_details.append(f"{label}(ja): 未取得/空")
 
-        # TTCK/オンラインチェック
-        if 'location' in ja_map_to_use and ja_data.get('location') != ja_map_to_use['location'][2]:
-            if ja_data.get('name') and "TTCK" in ja_data['name']:
-                print("           日本語: 科目名にTTCKが含まれるため、教室情報を「TTCK」に設定します。")
-                ja_data['location'] = "TTCK"
-            elif ja_data.get('class_format') and ("オンライン" in ja_data['class_format'] or "対面" not in ja_data['class_format']):
-                 print("           日本語: オンライン授業の可能性があるため、教室情報を「オンライン」に設定します。")
-                 ja_data['location'] = "オンライン"
+        # ★★★ 教室情報の上書きロジック (TTCK優先、次にオンライン) - 変更なし ★★★
+        location_overwritten = False
+        # 1. TTCKチェック
+        if ja_data.get('name') and "TTCK" in ja_data['name']:
+            print("           日本語: 科目名にTTCKが含まれるため、教室情報を「TTCK」に設定します。")
+            ja_data['location'] = "TTCK"
+            location_overwritten = True
+        # 2. オンラインチェック (TTCKでなければ)
+        elif ja_data.get('class_format') and "オンライン" in ja_data['class_format']:
+             print("           日本語: オンライン授業のため、教室情報を「オンライン」に強制設定します。")
+             ja_data['location'] = "オンライン"
+             location_overwritten = True
 
+        if location_overwritten:
+             print(f"              -> 上書き後の教室(ja): {ja_data['location']}")
+
+        # --- 必須データチェック ---
         if critical_data_missing:
             raise MissingCriticalDataError(f"必須日本語データ取得失敗 (URL: {japanese_url}): {'; '.join(missing_details)}")
         print("        --- 日本語情報取得完了 ---")
@@ -435,7 +448,7 @@ def get_syllabus_details(driver, current_year, screenshots_dir):
         driver.get(english_url)
         WebDriverWait(driver, ELEMENT_WAIT_TIMEOUT).until(EC.presence_of_element_located((By.TAG_NAME, "body")))
         print(f"        英語ページ読み込み完了。JavaScriptレンダリング待機中 ({JS_RENDER_WAIT}秒)...")
-        time.sleep(JS_RENDER_WAIT)
+        time.sleep(JS_RENDER_WAIT) # ★★★ JSレンダリング待機時間をJS_RENDER_WAITに変更 ★★★
         print(f"        待機完了。英語情報取得試行...")
 
         # --- ★★★ 年度に応じて使用するXPathマップを選択 (英語用) ★★★ ---
@@ -464,15 +477,21 @@ def get_syllabus_details(driver, current_year, screenshots_dir):
             en_data[key] = get_text_by_xpath(driver, xpath, default_value) # default_valueも英語マップのものを使う
             print(f"              -> {en_data[key][:50]}...")
 
-        # TTCK/オンラインチェック (英語ページの値で)
-        # ★★★ 英語マップのデフォルト値と比較 ★★★
-        if 'location' in en_map_to_use and en_data.get('location') != en_map_to_use['location'][2]:
-            if en_data.get('name') and "TTCK" in en_data['name']:
-                print("           英語: 科目名にTTCKが含まれるため、教室情報を「TTCK」に設定します。")
-                en_data['location'] = "TTCK"
-            elif en_data.get('class_format') and ("online" in en_data['class_format'].lower() or "remote" in en_data['class_format'].lower() or "face-to-face" not in en_data['class_format'].lower()):
-                 print("           英語: オンライン授業の可能性があるため、教室情報を「Online」に設定します。")
-                 en_data['location'] = "Online"
+        # ★★★ 教室情報の上書きロジック (TTCK優先、次にオンライン) - 変更なし ★★★
+        location_overwritten_en = False
+        # 1. TTCKチェック
+        if en_data.get('name') and "TTCK" in en_data['name']:
+            print("           英語: 科目名にTTCKが含まれるため、教室情報を「TTCK」に設定します。")
+            en_data['location'] = "TTCK" # 英語でもTTCKはそのまま
+            location_overwritten_en = True
+        # 2. オンラインチェック (TTCKでなければ)
+        elif en_data.get('class_format') and ("online" in en_data['class_format'].lower() or "remote" in en_data['class_format'].lower()):
+             print("           英語: オンライン授業のため、教室情報を「Online」に強制設定します。")
+             en_data['location'] = "Online"
+             location_overwritten_en = True
+
+        if location_overwritten_en:
+             print(f"              -> 上書き後の教室(en): {en_data['location']}")
 
         print("        --- 英語情報取得完了 ---")
 
@@ -539,12 +558,12 @@ def get_syllabus_details(driver, current_year, screenshots_dir):
     print(f"              単位(en): {final_details['translations']['en'].get('credits', 'N/A')}")
     print(f"              分野(ja): {final_details['translations']['ja'].get('field', 'N/A')}")
     print(f"              分野(en): {final_details['translations']['en'].get('field', 'N/A')}")
-    print(f"              教室(ja): {final_details['translations']['ja'].get('location', 'N/A')}")
-    print(f"              教室(en): {final_details['translations']['en'].get('location', 'N/A')}")
-    print(f"              曜日時限(ja): {final_details['translations']['ja'].get('day_period', 'N/A')}") # 追加
-    print(f"              曜日時限(en): {final_details['translations']['en'].get('day_period', 'N/A')}") # 追加
-    print(f"              選抜方法(ja): {final_details['translations']['ja'].get('selection_method', 'N/A')}") # 追加
-    print(f"              選抜方法(en): {final_details['translations']['en'].get('selection_method', 'N/A')}") # 追加
+    print(f"              教室(ja): {final_details['translations']['ja'].get('location', 'N/A')}") # 上書きされている可能性あり
+    print(f"              教室(en): {final_details['translations']['en'].get('location', 'N/A')}") # 上書きされている可能性あり
+    print(f"              曜日時限(ja): {final_details['translations']['ja'].get('day_period', 'N/A')}")
+    print(f"              曜日時限(en): {final_details['translations']['en'].get('day_period', 'N/A')}")
+    print(f"              選抜方法(ja): {final_details['translations']['ja'].get('selection_method', 'N/A')}")
+    print(f"              選抜方法(en): {final_details['translations']['en'].get('selection_method', 'N/A')}")
     print("           --------------------------------------------------")
 
     print(f"           ✓ 詳細情報取得完了: 「{final_details['translations']['ja'].get('name', '不明')}」 (Year: {current_year}, Semester: {final_details['semester']})")
@@ -555,10 +574,8 @@ def get_syllabus_details(driver, current_year, screenshots_dir):
 def aggregate_syllabus_data(all_raw_data):
     """
     複数年度にわたる生データを集約し、指定されたJSON形式に整形する。
-    ★★★ 集約キー: 登録番号, 担当者名(日), 科目名(日), 学期(季節のみ), 分野(日), 単位(日) ★★★
+    ★★★ 集約キー: 担当者名(日), 科目名(日), 学期(季節のみ), 分野(日), 単位(日) ★★★ (登録番号を除外)
     複数年度ある場合は、最新年度のデータを基本とし、year と available_years を更新する。
-    ★★★ 修正: 最終出力に selection_method と day_period を追加 ★★★
-    ★★★ 修正: 最終出力の semester は季節のみ ★★★
     """
     if not all_raw_data: return []
     grouped_by_key = {}
@@ -566,7 +583,7 @@ def aggregate_syllabus_data(all_raw_data):
     print("\n--- データ集約開始 ---")
     for item in all_raw_data:
         # --- ★★★ 集約キーに使用する値を取得 ★★★ ---
-        course_id = item.get('course_id')
+        course_id = item.get('course_id') # course_id は取得するが、キーには含めない
 
         # 担当者名 (日本語、タプル化)
         professor_ja_key = item.get('professor_ja', '')
@@ -585,9 +602,9 @@ def aggregate_syllabus_data(all_raw_data):
         # 単位 (日本語)
         credits_ja_key = item.get('credits_ja', '')
 
-        # --- ★★★ 新しい集約キーを作成 ★★★ ---
+        # --- ★★★ 新しい集約キーを作成 (登録番号を除外) ★★★ ---
         agg_key = (
-            course_id,
+            # course_id, # ★★★ 登録番号を除外 ★★★
             professors_tuple,
             name_ja_key,
             semester_agg_key, # 季節のみ
@@ -596,7 +613,8 @@ def aggregate_syllabus_data(all_raw_data):
         )
 
         # --- データが存在しないキー要素があればスキップ ---
-        if not course_id or not name_ja_key or not field_ja_key or not credits_ja_key or semester_agg_key == "unknown":
+        # ★★★ course_id のチェックを除外 ★★★
+        if not name_ja_key or not field_ja_key or not credits_ja_key or semester_agg_key == "unknown":
             print(f"[警告] 集約キーに必要な情報が不足または学期不明 (Course ID: {course_id}, Year: {item.get('year_scraped')}, Semester: {semester_agg_key})。スキップします。")
             skipped_count += 1
             continue
@@ -626,7 +644,8 @@ def aggregate_syllabus_data(all_raw_data):
         trans_en = latest_data.get('translations', {}).get('en', {})
 
         # 学期情報 (集約キーで使用した季節をそのまま使う)
-        semester_final = agg_key[3] # agg_key = (course_id, prof_tuple, name, semester, field, credits)
+        # agg_key = (prof_tuple, name, semester, field, credits) なのでインデックスがずれる
+        semester_final = agg_key[2] # ★★★ インデックスを修正 (3 -> 2) ★★★
 
         # professors リストを作成 (変更なし)
         professors_list = []
@@ -658,6 +677,7 @@ def aggregate_syllabus_data(all_raw_data):
 
         # 最終的なアイテムを作成
         aggregated_item = {
+            # ★★★ course_id は最新のものを保持する (キーには使わない) ★★★
             "course_id": latest_data['course_id'],
             "year": "&".join(available_years_str),
             "semester": semester_final, # ★★★ 季節のみ ★★★
@@ -667,18 +687,18 @@ def aggregate_syllabus_data(all_raw_data):
                     "field": trans_ja.get('field', ''),
                     "credits": trans_ja.get('credits', ''),
                     "semester": trans_ja.get('semester', ''), # 元の日本語学期文字列 (年度含む可能性あり)
-                    "Classroom": trans_ja.get('location', ''),
-                    "day_period": trans_ja.get('day_period', ''), # ★★★ 曜日時限(ja)を追加 ★★★
-                    "selection_method": trans_ja.get('selection_method', '') # ★★★ 選抜方法(ja)を追加 ★★★
+                    "Classroom": trans_ja.get('location', ''), # location は get_syllabus_details で上書きされている可能性あり
+                    "day_period": trans_ja.get('day_period', ''),
+                    "selection_method": trans_ja.get('selection_method', '')
                 },
                 "en": {
                     "name": trans_en.get('name', ''),
                     "field": trans_en.get('field', ''),
                     "credits": trans_en.get('credits', ''),
                     "semester": trans_en.get('semester', ''), # 元の英語学期文字列 (年度含む可能性あり)
-                    "Classroom": trans_en.get('location', ''),
-                    "day_period": trans_en.get('day_period', ''), # ★★★ 曜日時限(en)を追加 ★★★
-                    "selection_method": trans_en.get('selection_method', '') # ★★★ 選抜方法(en)を追加 ★★★
+                    "Classroom": trans_en.get('location', ''), # location は get_syllabus_details で上書きされている可能性あり
+                    "day_period": trans_en.get('day_period', ''),
+                    "selection_method": trans_en.get('selection_method', '')
                 }
             },
             "professors": professors_list,
@@ -1018,7 +1038,7 @@ if __name__ == "__main__":
                             print("検索ページ以外にいるため、検索ページに移動します。")
                             driver.get('https://gslbs.keio.jp/syllabus/search')
                             WebDriverWait(driver, ELEMENT_WAIT_TIMEOUT).until(EC.url_contains("gslbs.keio.jp/syllabus/search"))
-                            time.sleep(MEDIUM_WAIT) # ページ遷移後の待機
+                            time.sleep(MEDIUM_WAIT) # ★★★ ページ遷移後の待機時間をMEDIUM_WAITに ★★★
                     except WebDriverException as e_url_check:
                         # URL確認時のエラーはセッションエラーとして扱う
                         print(f"[警告] 現在のURL確認中にエラー: {e_url_check}。セッションエラーとして処理します。")
@@ -1032,7 +1052,7 @@ if __name__ == "__main__":
                         save_screenshot(driver, f"year_selection_failed_{year}_{field_name}", screenshots_dir)
                         field_index += 1; continue # 次の分野へ
                     print(f"   年度 '{year}' を選択しました。")
-                    time.sleep(SHORT_WAIT) # 選択後の待機 (重要)
+                    time.sleep(SHORT_WAIT) # ★★★ 選択後の待機時間をSHORT_WAITに ★★★
 
                     # --- 分野選択 ---
                     field_select_xpath = "//select[@name='KEYWORD_FLD1CD']"
@@ -1042,7 +1062,7 @@ if __name__ == "__main__":
                         save_screenshot(driver, f"field_selection_failed_{field_name}_{year}", screenshots_dir)
                         field_index += 1; continue # 次の分野へ
                     print(f"   分野 '{field_name}' を選択しました。")
-                    time.sleep(SHORT_WAIT) # 選択後の待機 (重要)
+                    time.sleep(SHORT_WAIT) # ★★★ 選択後の待機時間をSHORT_WAITに ★★★
 
 
                     # --- 学年チェックボックス処理 (3年を解除) ---
@@ -1071,7 +1091,7 @@ if __name__ == "__main__":
                     result_indicator_xpath = "//a[contains(@class, 'syllabus-detail')] | //div[contains(text(), '該当するデータはありません')] | //ul[contains(@class, 'pagination')]"
                     print("   検索結果表示待機中...")
                     WebDriverWait(driver, ELEMENT_WAIT_TIMEOUT).until(EC.presence_of_element_located((By.XPATH, result_indicator_xpath)))
-                    time.sleep(MEDIUM_WAIT) # 結果表示後の描画待機
+                    time.sleep(MEDIUM_WAIT) # ★★★ 結果表示後の描画待機時間をMEDIUM_WAITに ★★★
                     print("   検索結果表示完了。")
 
                     # --- 該当なしチェック ---
@@ -1095,31 +1115,31 @@ if __name__ == "__main__":
                                     # テキストでの選択失敗時、valueで試行
                                     Select(sort_element).select_by_value("2")
                                     print("           ソート順を Value='2' で選択しました。")
-                                    time.sleep(MEDIUM_WAIT) # ソート変更後の結果再描画待機
+                                    time.sleep(MEDIUM_WAIT) # ★★★ ソート変更後の待機時間をMEDIUM_WAITに ★★★
                                     # 結果表示を再度待機
                                     WebDriverWait(driver, ELEMENT_WAIT_TIMEOUT).until(EC.presence_of_element_located((By.XPATH, result_indicator_xpath)))
-                                    time.sleep(MEDIUM_WAIT)
+                                    time.sleep(MEDIUM_WAIT) # ★★★ 再描画待機時間をMEDIUM_WAITに ★★★
                                 except Exception as e_sort_val:
                                     print(f"           [警告] Value='2'でのソート失敗: {e_sort_val}。JSで試行...")
                                     try:
                                         driver.execute_script("arguments[0].value = '2'; arguments[0].dispatchEvent(new Event('change', { bubbles: true }));", sort_element)
                                         print("           JSでソート順 Value='2' を設定しました。")
-                                        time.sleep(MEDIUM_WAIT) # JS実行後の待機
+                                        time.sleep(MEDIUM_WAIT) # ★★★ JS実行後の待機時間をMEDIUM_WAITに ★★★
                                         WebDriverWait(driver, ELEMENT_WAIT_TIMEOUT).until(EC.presence_of_element_located((By.XPATH, result_indicator_xpath)))
-                                        time.sleep(MEDIUM_WAIT)
+                                        time.sleep(MEDIUM_WAIT) # ★★★ 再描画待機時間をMEDIUM_WAITに ★★★
                                     except Exception as e_js: print(f"           [警告] JSでのソートも失敗: {e_js}")
                             else:
                                 print("           ソート順を「科目名順」で選択しました。")
-                                time.sleep(MEDIUM_WAIT) # ソート変更後の結果再描画待機
+                                time.sleep(MEDIUM_WAIT) # ★★★ ソート変更後の待機時間をMEDIUM_WAITに ★★★
                                 WebDriverWait(driver, ELEMENT_WAIT_TIMEOUT).until(EC.presence_of_element_located((By.XPATH, result_indicator_xpath)))
-                                time.sleep(MEDIUM_WAIT)
+                                time.sleep(MEDIUM_WAIT) # ★★★ 再描画待機時間をMEDIUM_WAITに ★★★
                         else:
                              print("   ソート順は既に「科目名順」です。")
 
                     except TimeoutException: pass # ソート要素が見つからない場合は無視
                     except Exception as e_sort: print(f"   [警告] ソート設定エラー: {e_sort}")
 
-                    # --- ★★★ 修正: ページネーションループ (変更なし) ★★★ ---
+                    # --- ★★★ ページネーションループ ★★★ ---
                     last_processed_page_num = 0 # この年度/分野で処理した最後のページ番号
                     while True: # ページネーションブロックを処理するループ
                         print(f"\n     --- ページネーションブロック処理開始 (最終処理ページ: {last_processed_page_num}) ---")
@@ -1181,7 +1201,7 @@ if __name__ == "__main__":
                                             WebDriverWait(driver, MEDIUM_WAIT).until(lambda d: len(d.window_handles) == len(initial_handles) + 1)
                                             new_handle = list(set(driver.window_handles) - initial_handles)[0]
                                             driver.switch_to.window(new_handle) # 新しいタブに切り替え
-                                            time.sleep(SHORT_WAIT) # タブ切り替え後の待機
+                                            time.sleep(SHORT_WAIT) # ★★★ タブ切り替え後の待機時間をSHORT_WAITに ★★★
 
                                             # ★★★ 詳細情報取得 (エラー発生時はNoneが返るか、例外が発生) ★★★
                                             syllabus_details = get_syllabus_details(driver, year, screenshots_dir)
@@ -1299,7 +1319,7 @@ if __name__ == "__main__":
                                 if click_element(driver, link_to_click):
                                     print(f"        ページ {page_num} へ遷移。結果待機中...")
                                     WebDriverWait(driver, ELEMENT_WAIT_TIMEOUT).until(EC.presence_of_element_located((By.XPATH, result_indicator_xpath)))
-                                    time.sleep(MEDIUM_WAIT) # ページ内容とページネーションの描画を待つ
+                                    time.sleep(MEDIUM_WAIT) # ★★★ ページ遷移後の待機時間をMEDIUM_WAITに ★★★
                                     clicked_page_link = True
                                     # ページ遷移に成功したら、このブロックのページ番号処理ループを抜け、
                                     # 次のページネーションループの冒頭でアクティブページとして処理される
@@ -1338,7 +1358,7 @@ if __name__ == "__main__":
                             if click_element(driver, next_button):
                                 print("        「次へ」をクリックしました。結果待機中...")
                                 WebDriverWait(driver, ELEMENT_WAIT_TIMEOUT).until(EC.presence_of_element_located((By.XPATH, result_indicator_xpath)))
-                                time.sleep(MEDIUM_WAIT) # ページ内容とページネーションの再描画を待つ
+                                time.sleep(MEDIUM_WAIT) # ★★★ ページ遷移後の待機時間をMEDIUM_WAITに ★★★
                                 pagination_processed_in_block = True
                                 # last_processed_page_num は次のループの開始時にアクティブページから更新される
                                 continue # 次のページネーションブロックへ

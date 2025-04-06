@@ -7330,46 +7330,6 @@
         ]
     },
     {
-        "course_id": "38264",
-        "year": "2025",
-        "semester": "spring",
-        "translations": {
-            "ja": {
-                "name": "ドイツ語スキル",
-                "field": "基盤科目言語コミュニケーション科目ドイツ語",
-                "credits": "2",
-                "semester": "2025 春",
-                "Classroom": "κ16",
-                "day_period": "水3",
-                "selection_method": "抽選以外"
-            },
-            "en": {
-                "name": "GERMAN SKILL",
-                "field": "FUNDAMENTAL SUBJECTS SUBJECTS OF LANGUAGE COMMUNICATION GERMAN",
-                "credits": "2",
-                "semester": "2025 Spring",
-                "Classroom": "κ16",
-                "day_period": "Wed.3",
-                "selection_method": "Other Than Lottery"
-            }
-        },
-        "professors": [
-            {
-                "name": {
-                    "ja": "マイヤー， アンドレアス",
-                    "en": "MEYER"
-                },
-                "department": {
-                    "ja": "基盤科目言語コミュニケーション科目ドイツ語",
-                    "en": "FUNDAMENTAL SUBJECTS SUBJECTS OF LANGUAGE COMMUNICATION GERMAN"
-                }
-            }
-        ],
-        "available_years": [
-            "2025"
-        ]
-    },
-    {
         "course_id": "38279",
         "year": "2025",
         "semester": "spring",
