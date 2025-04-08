@@ -28,8 +28,8 @@ from urllib.parse import urlparse, parse_qs, urlencode, urlunparse
 
 # --- グローバル変数・設定 ---
 CHROME_DRIVER_PATH = None # ChromeDriverのパス (Noneの場合は自動検出)
-USER_EMAIL = 'Email' # ログインに使用するメールアドレス
-USER_PASSWORD = 'password' # ログインに使用するパスワード
+USER_EMAIL = 'kaitosumishi@keiojp' # ログインに使用するメールアドレス
+USER_PASSWORD = '0528QBSkaito' # ログインに使用するパスワード
 OUTPUT_DIR_NAME = 'syllabus_output' # 出力ディレクトリ名
 OUTPUT_JSON_FILE = 'syllabus_data.json' # 出力JSONファイル名
 TARGET_FIELDS = ["基盤科目", "先端科目", "特設科目"] # スクレイピング対象の分野
@@ -39,7 +39,7 @@ ERROR_RATE_THRESHOLD = 0.7  # エラー率の許容閾値（70%）
 MIN_SAMPLES_BEFORE_CHECK = 10  # エラー率チェック前の最小サンプル数
 ENABLE_AUTO_HALT = True  # 自動停止機能の有効/無効
 # ★★★ パフォーマンス向上のため、Trueに設定することを推奨 ★★★
-HEADLESS_MODE = True # Trueにするとヘッドレスモードで実行
+HEADLESS_MODE = False # Trueにするとヘッドレスモードで実行
 # ★★★ 並列処理関連変数は削除またはコメントアウト ★★★
 # PARALLEL_PROCESSING = False # 並列処理を無効化
 # PARALLEL_WORKERS = 10 # (使用しない)
