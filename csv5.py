@@ -1,6 +1,7 @@
 # -*- coding: utf-8 -*-
 # --- ライブラリインポート ---
 #Windows Virtual Environment Activation: .\.venv\Scripts\activate.ps1
+#Mac Virtual Environment Activation: source .venv/bin/activate
 import json
 import os
 import sys # sys.exit()のために追加
@@ -28,12 +29,12 @@ from urllib.parse import urlparse, parse_qs, urlencode, urlunparse
 
 # --- グローバル変数・設定 ---
 CHROME_DRIVER_PATH = None # ChromeDriverのパス (Noneの場合は自動検出)
-USER_EMAIL = 'kaitosumishi@keio.jp' # ログインに使用するメールアドレス
-USER_PASSWORD = '0528QBSkaito' # ログインに使用するパスワード
+USER_EMAIL = 'Email' # ログインに使用するメールアドレス
+USER_PASSWORD = 'Password' # ログインに使用するパスワード
 OUTPUT_DIR_NAME = 'syllabus_output' # 出力ディレクトリ名
 OUTPUT_JSON_FILE = 'syllabus_data.json' # 出力JSONファイル名
 TARGET_FIELDS = ["基盤科目", "先端科目", "特設科目"] # スクレイピング対象の分野
-TARGET_YEARS = [2024] # スクレイピング対象の年度
+TARGET_YEARS = [2025] # スクレイピング対象の年度
 CONSECUTIVE_ERROR_THRESHOLD = 5  # 連続エラーの最大許容数
 ERROR_RATE_THRESHOLD = 0.7  # エラー率の許容閾値（70%）
 MIN_SAMPLES_BEFORE_CHECK = 10  # エラー率チェック前の最小サンプル数
