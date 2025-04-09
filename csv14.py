@@ -160,6 +160,29 @@ def normalize_text(text):
         return text.strip()
     return ""
 
+def select_option_by_text(driver, select_element, text):
+    """セレクト要素から指定されたテキストのオプションを選択する"""
+    try:
+        select = Select(select_element)
+        for option in select.options:
+            if text == option.text.strip():
+                select.select_by_visible_text(text)
+                time.sleep(0.5)  # 選択後の短い待機
+                return True
+        
+        # テキスト完全一致が見つからない場合、部分一致を試みる
+        for option in select.options:
+            if text in option.text.strip():
+                select.select_by_visible_text(option.text.strip())
+                time.sleep(0.5)
+                return True
+        
+        print(f"                 オプション '{text}' が見つかりませんでした。")
+        return False
+    except Exception as e:
+        print(f"                 オプション選択中にエラー: {e}")
+        return False
+
 def click_element(driver, element, wait_time=SHORT_WAIT): # SHORT_WAITを使用
     """要素をクリックする (失敗時はJavaScriptで試行)"""
     try:
@@ -1239,8 +1262,89 @@ if __name__ == "__main__":
                                 urls_on_page = []
                                 buttons_on_page = []
                                 processed_count_on_page = 0
-                                
-                                # ここに詳細ページ処理コードが続きます...
+                                try:
+                                    WebDriverWait(driver, MEDIUM_WAIT).until(EC.presence_of_element_located((By.XPATH, syllabus_link_xpath)))
+                                    buttons_on_page = driver.find_elements(By.XPATH, syllabus_link_xpath)
+                                    
+                                    # 検出したリンク情報を表示
+                                    print(f"         検出した詳細ボタン数: {len(buttons_on_page)}")
+                                    for i, btn in enumerate(buttons_on_page[:3]):
+                                        btn_text = btn.text.strip() if btn.text else "テキストなし"
+                                        btn_class = btn.get_attribute("class") or "クラスなし"
+                                        btn_href = btn.get_attribute("href") or "リンクなし"
+                                        print(f"         ボタン{i+1}: テキスト={btn_text}, クラス={btn_class}, URL={btn_href}")
+                                    
+                                    # URLを抽出
+                                    urls_on_page = []
+                                    for button in buttons_on_page:
+                                        href = button.get_attribute("href")
+                                        if href and href.strip():
+                                            if year <= 2024:
+                                                if "syllabus.sfc.keio.ac.jp" in href or "courses/2024" in href:
+                                                    urls_on_page.append(href)
+                                            else:
+                                                urls_on_page.append(href)
+
+                                    if len(urls_on_page) > 0:
+                                        print(f"        逐次処理モードで {len(urls_on_page)} 件のURLを処理します...")
+                                        main_window = driver.current_window_handle
+                                        
+                                        # 各URLを処理
+                                        for index, syllabus_url in enumerate(urls_on_page):
+                                            if syllabus_url in opened_links_this_year_field:
+                                                print(f"           URL {index + 1}/{len(urls_on_page)}: {syllabus_url} は既に処理済みのためスキップします")
+                                                continue
+
+                                            print(f"\n           詳細処理 {index + 1}/{len(urls_on_page)}: {syllabus_url}")
+                                            syllabus_details = None
+                                            try:
+                                                # 新しいタブで詳細ページを開く
+                                                driver.switch_to.new_window('tab')
+                                                detail_tab = driver.current_window_handle
+                                                driver.get(syllabus_url)
+                                                
+                                                # 詳細ページの処理
+                                                WebDriverWait(driver, ELEMENT_WAIT_TIMEOUT).until(EC.presence_of_element_located((By.TAG_NAME, "body")))
+                                                time.sleep(MEDIUM_WAIT)
+                                                syllabus_details = get_syllabus_details(driver, year, screenshots_dir)
+                                                
+                                                # タブを閉じてメインウィンドウに戻る
+                                                driver.close()
+                                                driver.switch_to.window(main_window)
+                                                
+                                                # 成功した場合データを追加
+                                                if syllabus_details:
+                                                    scraped_data_all_years.append(syllabus_details)
+                                                    opened_links_this_year_field.add(syllabus_url)
+                                                    processed_count_on_page += 1
+                                                    field_total_attempts += 1
+                                                    consecutive_errors = 0
+                                                else:
+                                                    field_total_attempts += 1
+                                                    field_error_count += 1
+                                                    consecutive_errors += 1
+                                                
+                                            except Exception as e_detail:
+                                                print(f"           [エラー] 詳細ページ処理中に予期せぬエラー: {e_detail}")
+                                                traceback.print_exc()
+                                                
+                                                # タブを閉じてメインウィンドウに戻る
+                                                try:
+                                                    driver.close()
+                                                    driver.switch_to.window(main_window)
+                                                except Exception:
+                                                    print("           [警告] タブを閉じる際にエラー")
+                                                
+                                                field_total_attempts += 1
+                                                field_error_count += 1
+                                                consecutive_errors += 1
+                                                
+                                            # エラー閾値チェック
+                                            if ENABLE_AUTO_HALT and consecutive_errors >= CONSECUTIVE_ERROR_THRESHOLD:
+                                                print(f"\n[!!!] 処理を中断: {consecutive_errors}回の連続エラーが発生")
+                                                sys.exit(f"連続エラー ({consecutive_errors}回) により停止")
+                                except Exception as e_links:
+                                    print(f"         [警告] ページ {current_active_page_num} のリンク取得/処理中にエラー: {e_links}")
                                 # (既存の詳細処理コードはそのまま使用できます)
                                 
                                 # 処理後にページ情報を更新
