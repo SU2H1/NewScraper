@@ -89,7 +89,7 @@
                 "field": "基盤科目言語コミュニケーション科目アラビア語",
                 "credits": "4",
                 "semester": "2025 春",
-                "Classroom": "火1:τ12, 水1:ι17, 木2:ο11, 金2:ε24",
+                "Classroom": "火1:τ12, 水1:ο12, 木2:ο11, 金2:ο22",
                 "day_period": "火1/水1/木2/金2",
                 "selection_method": "抽選以外"
             },
@@ -98,7 +98,7 @@
                 "field": "FUNDAMENTAL SUBJECTS SUBJECTS OF LANGUAGE COMMUNICATION ARABIC",
                 "credits": "4",
                 "semester": "2025 Spring",
-                "Classroom": "Tue1:τ12, Wed.1:ι17, Thu.2:ο11, Fri.2:ε24",
+                "Classroom": "Tue1:τ12, Wed.1:ο12, Thu.2:ο11, Fri.2:ο22",
                 "day_period": "Tue.1/Wed.1/Thu.2/Fri.2",
                 "selection_method": "Other Than Lottery"
             }
@@ -5239,7 +5239,7 @@
                 "field": "基盤科目データサイエンス科目データサイエンス１",
                 "credits": "2",
                 "semester": "2025 春",
-                "Classroom": "Ω11",
+                "Classroom": "ο12",
                 "day_period": "火2",
                 "selection_method": "抽選"
             },
@@ -5248,7 +5248,7 @@
                 "field": "FUNDAMENTAL SUBJECTS SUBJECTS OF DATA SCIENCE DATA SCIENCE 1",
                 "credits": "2",
                 "semester": "2025 Spring",
-                "Classroom": "Ω11",
+                "Classroom": "ο12",
                 "day_period": "Tue.2",
                 "selection_method": "Lottery"
             }
@@ -6736,8 +6736,8 @@
         "professors": [
             {
                 "name": {
-                    "ja": "高木 丈也",
-                    "en": "TAKAGI"
+                    "ja": "柳町 功",
+                    "en": "YANAGIMACHI"
                 },
                 "department": {
                     "ja": "基盤科目言語コミュニケーション科目朝鮮語",
@@ -6747,7 +6747,7 @@
             {
                 "name": {
                     "ja": "金 南听",
-                    "en": "TAKEYA; KIM"
+                    "en": "ISAO; KIM"
                 },
                 "department": {
                     "ja": "基盤科目言語コミュニケーション科目朝鮮語",
@@ -6766,8 +6766,8 @@
             },
             {
                 "name": {
-                    "ja": "柳町 功",
-                    "en": "MINJUNG; YANAGIMACHI"
+                    "ja": "高木 丈也",
+                    "en": "MINJUNG; TAKAGI"
                 },
                 "department": {
                     "ja": "基盤科目言語コミュニケーション科目朝鮮語",
@@ -6806,8 +6806,8 @@
         "professors": [
             {
                 "name": {
-                    "ja": "高木 丈也",
-                    "en": "TAKAGI"
+                    "ja": "徐 旻廷",
+                    "en": "SEO"
                 },
                 "department": {
                     "ja": "基盤科目言語コミュニケーション科目朝鮮語",
@@ -6817,7 +6817,7 @@
             {
                 "name": {
                     "ja": "金 南听",
-                    "en": "TAKEYA; KIM"
+                    "en": "MINJUNG; KIM"
                 },
                 "department": {
                     "ja": "基盤科目言語コミュニケーション科目朝鮮語",
@@ -6836,8 +6836,8 @@
             },
             {
                 "name": {
-                    "ja": "徐 旻廷",
-                    "en": "EUNYOUNG; SEO"
+                    "ja": "高木 丈也",
+                    "en": "EUNYOUNG; TAKAGI"
                 },
                 "department": {
                     "ja": "基盤科目言語コミュニケーション科目朝鮮語",
@@ -6996,8 +6996,8 @@
         "professors": [
             {
                 "name": {
-                    "ja": "徐 旻廷",
-                    "en": "SEO"
+                    "ja": "高木 丈也",
+                    "en": "TAKAGI"
                 },
                 "department": {
                     "ja": "基盤科目言語コミュニケーション科目朝鮮語",
@@ -7006,8 +7006,8 @@
             },
             {
                 "name": {
-                    "ja": "高木 丈也",
-                    "en": "MINJUNG; TAKAGI"
+                    "ja": "徐 旻廷",
+                    "en": "TAKEYA; SEO"
                 },
                 "department": {
                     "ja": "基盤科目言語コミュニケーション科目朝鮮語",
@@ -8989,7 +8989,7 @@
                 "field": "基盤科目データサイエンス科目データサイエンス１",
                 "credits": "2",
                 "semester": "2025 春",
-                "Classroom": "λ13",
+                "Classroom": "ε18",
                 "day_period": "火2",
                 "selection_method": "抽選"
             },
@@ -8998,7 +8998,7 @@
                 "field": "FUNDAMENTAL SUBJECTS SUBJECTS OF DATA SCIENCE DATA SCIENCE 1",
                 "credits": "2",
                 "semester": "2025 Spring",
-                "Classroom": "λ13",
+                "Classroom": "ε18",
                 "day_period": "Tue.2",
                 "selection_method": "Lottery"
             }
@@ -9529,7 +9529,7 @@
                 "field": "基盤科目言語コミュニケーション科目フランス語",
                 "credits": "4",
                 "semester": "2025 春",
-                "Classroom": "火3:λ13, 水3:ι21, 木2:λ24, 金2:ο16",
+                "Classroom": "火3:λ12, 水3:ι21, 木2:λ24, 金2:ο16",
                 "day_period": "火3/水3/木2/金2",
                 "selection_method": "抽選以外"
             },
@@ -9538,7 +9538,7 @@
                 "field": "FUNDAMENTAL SUBJECTS SUBJECTS OF LANGUAGE COMMUNICATION FRENCH",
                 "credits": "4",
                 "semester": "2025 Spring",
-                "Classroom": "Tue3:λ13, Wed.3:ι21, Thu.2:λ24, Fri.2:ο16",
+                "Classroom": "Tue3:λ12, Wed.3:ι21, Thu.2:λ24, Fri.2:ο16",
                 "day_period": "Tue.3/Wed.3/Thu.2/Fri.2",
                 "selection_method": "Other Than Lottery"
             }
@@ -13499,7 +13499,7 @@
                 "field": "先端科目環境情報系",
                 "credits": "2",
                 "semester": "2025 春(学期前半)",
-                "Classroom": "τ31",
+                "Classroom": "λ21",
                 "day_period": "火1,2",
                 "selection_method": "抽選以外"
             },
@@ -13508,7 +13508,7 @@
                 "field": "ADVANCED SUBJECTS SERIES OF ENVIRONMENT AND INFORMATION STUDIES",
                 "credits": "2",
                 "semester": "2025 Spring (1st Half)",
-                "Classroom": "τ31",
+                "Classroom": "λ21",
                 "day_period": "Tue.1,2",
                 "selection_method": "Other Than Lottery"
             }
@@ -14729,7 +14729,7 @@
                 "field": "先端科目総合政策系",
                 "credits": "2",
                 "semester": "2025 春",
-                "Classroom": "κ23",
+                "Classroom": "θ",
                 "day_period": "水2",
                 "selection_method": "抽選"
             },
@@ -14738,7 +14738,7 @@
                 "field": "ADVANCED SUBJECTS SERIES OF POLICY MANAGEMENT",
                 "credits": "2",
                 "semester": "2025 Spring",
-                "Classroom": "κ23",
+                "Classroom": "θ",
                 "day_period": "Wed.2",
                 "selection_method": "Lottery"
             }
@@ -15249,7 +15249,7 @@
                 "field": "先端科目総合政策系",
                 "credits": "2",
                 "semester": "2025 春",
-                "Classroom": "ε13",
+                "Classroom": "τ11",
                 "day_period": "火4",
                 "selection_method": "抽選以外"
             },
@@ -15258,7 +15258,7 @@
                 "field": "ADVANCED SUBJECTS SERIES OF POLICY MANAGEMENT",
                 "credits": "2",
                 "semester": "2025 Spring",
-                "Classroom": "ε13",
+                "Classroom": "τ11",
                 "day_period": "Tue.4",
                 "selection_method": "Other Than Lottery"
             }
@@ -15849,7 +15849,7 @@
                 "field": "先端科目総合政策系",
                 "credits": "2",
                 "semester": "2025 春",
-                "Classroom": "ι12",
+                "Classroom": "Ω11",
                 "day_period": "木2",
                 "selection_method": "抽選以外"
             },
@@ -15858,7 +15858,7 @@
                 "field": "ADVANCED SUBJECTS SERIES OF POLICY MANAGEMENT",
                 "credits": "2",
                 "semester": "2025 Spring",
-                "Classroom": "ι12",
+                "Classroom": "Ω11",
                 "day_period": "Thu.2",
                 "selection_method": "Other Than Lottery"
             }
@@ -15889,7 +15889,7 @@
                 "field": "先端科目総合政策系",
                 "credits": "2",
                 "semester": "2025 春",
-                "Classroom": "ο12",
+                "Classroom": "Ω11",
                 "day_period": "火2",
                 "selection_method": "抽選"
             },
@@ -15898,7 +15898,7 @@
                 "field": "ADVANCED SUBJECTS SERIES OF POLICY MANAGEMENT",
                 "credits": "2",
                 "semester": "2025 Spring",
-                "Classroom": "ο12",
+                "Classroom": "Ω11",
                 "day_period": "Tue.2",
                 "selection_method": "Lottery"
             }
@@ -16419,7 +16419,7 @@
                 "field": "先端科目総合政策系",
                 "credits": "2",
                 "semester": "2025 春",
-                "Classroom": "κ21",
+                "Classroom": "Ω22",
                 "day_period": "火3",
                 "selection_method": ""
             },
@@ -16428,7 +16428,7 @@
                 "field": "ADVANCED SUBJECTS SERIES OF POLICY MANAGEMENT",
                 "credits": "2",
                 "semester": "2025 Spring",
-                "Classroom": "κ21",
+                "Classroom": "Ω22",
                 "day_period": "Tue.3",
                 "selection_method": ""
             }
@@ -18449,7 +18449,7 @@
                 "field": "特設科目",
                 "credits": "2",
                 "semester": "2025 春",
-                "Classroom": "κ18",
+                "Classroom": "θ",
                 "day_period": "金5",
                 "selection_method": "抽選"
             },
@@ -18458,7 +18458,7 @@
                 "field": "SPECIAL SUBJECTS",
                 "credits": "2",
                 "semester": "2025 Spring",
-                "Classroom": "κ18",
+                "Classroom": "θ",
                 "day_period": "Fri.5",
                 "selection_method": "Lottery"
             }
