@@ -29,34 +29,33 @@ logger.info("Initialized FastMCP server")
 
 # [All tool functions remain the same - I'm not showing them here to keep the response shorter]
 @mcp.tool()
-async def list_files(directory: str = ".") -> str:
-    """List files in the specified directory."""
+async def read_file(path: str, encoding: Optional[str] = None) -> str:
+    """Read the contents of a file."""
     try:
-        logger.info(f"Listing files in directory: {directory}")
-        full_path = os.path.join(os.path.dirname(__file__), directory)
+        logger.info(f"Reading file: {path}")
+        full_path = os.path.join(os.path.dirname(__file__), path)
         if not os.path.exists(full_path):
-            return f"Error: Directory {directory} does not exist"
-            
-        files = os.listdir(full_path)
-        file_info = []
+            return f"File not found: No file named \"{path}\""
         
-        for file in files:
-            file_path = os.path.join(full_path, file)
-            size = os.path.getsize(file_path)
-            modified = datetime.fromtimestamp(os.path.getmtime(file_path))
-            is_dir = os.path.isdir(file_path)
+        if os.path.isdir(full_path):
+            return f"Cannot read directory: {path} is a directory"
             
-            file_info.append({
-                "name": file,
-                "type": "directory" if is_dir else "file",
-                "size": size,
-                "modified": modified.strftime("%Y-%m-%d %H:%M:%S")
-            })
+        # Handle binary vs text mode based on encoding
+        mode = "r" if encoding else "rb"
+        kwargs = {"encoding": encoding} if encoding else {}
         
-        return json.dumps(file_info, indent=2)
+        with open(full_path, mode, **kwargs) as file:
+            content = file.read()
+            
+        # For binary mode, return a base64 encoding
+        if not encoding:
+            import base64
+            return base64.b64encode(content).decode('ascii')
+            
+        return content
     except Exception as e:
-        logger.error(f"Error listing files: {str(e)}")
-        return f"Error listing files: {str(e)}\n{traceback.format_exc()}"
+        logger.error(f"Error reading file: {str(e)}")
+        return f"Error reading file: {str(e)}\n{traceback.format_exc()}"
 
 # [Other tool functions remain the same]
 
