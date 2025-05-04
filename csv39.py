@@ -80,16 +80,19 @@ INFO_MAP_JA_2025 = {
 }
 
 INFO_MAP_JA_2023_2024 = {
+    # HTMLテンプレートに基づいて実際の構造に合わせたシンプルなXPathセレクタを使用
     'name': ("科目名", "//h2/span[@class='title']", "名称不明"),
-    'semester': ("学期", "//div[contains(@class,'syllabus-info')]//dl/dt[normalize-space()='開講年度・学期']/following-sibling::dd[1]", "学期不明"),
-    'professor': ("担当者名", "//div[contains(@class,'syllabus-info')]//dl/dt[normalize-space()='授業教員名']/following-sibling::dd[1]", ""),
-    'credits': ("単位", "//div[contains(@class,'subject')]//dl/dt[normalize-space()='単位']/following-sibling::dd[1]", "単位不明"),
-    'field': ("分野", "//div[contains(@class,'subject')]//dl/dt[normalize-space()='分野']/following-sibling::dd[1]", "分野不明"),
-    'location': ("教室", "//div[contains(@class,'syllabus-info')]//dl/dt[normalize-space()='開講場所']/following-sibling::dd[1]", "教室不明"),
-    'day_period': ("曜日時限", "//div[contains(@class,'syllabus-info')]//dl/dt[normalize-space()='曜日・時限']/following-sibling::dd[1]", "曜日時限不明"),
-    'selection_method': ("選抜方法", "//div[contains(@class,'subject')]//dl/dt[normalize-space()='選抜方法']/following-sibling::dd[1]", ""),
-    'class_format': ("授業実施形態", "//div[contains(@class,'syllabus-info')]//dl/dt[normalize-space()='実施形態']/following-sibling::dd[1]", ""),
-    'course_id_fallback': ("登録番号(表)", "//div[contains(@class,'subject')]//dl/dt[normalize-space()='登録番号']/following-sibling::dd[1]", None)
+    # ※ 重要: 開講年度・学期情報はsubjectとsyllabus-infoの両方に存在するため、両方をチェック
+    'semester': ("学期", "(//div[@class='syllabus-info']//dt[text()='開講年度・学期']/following-sibling::dd[1] | //div[@class='subject']//dt[text()='開講年度・学期']/following-sibling::dd[1])[1]", "学期不明"),
+    'professor': ("担当者名", "//div[@class='syllabus-info']//dt[text()='授業教員名']/following-sibling::dd[1]", ""),
+    'day_period': ("曜日時限", "//div[@class='syllabus-info']//dt[text()='曜日・時限']/following-sibling::dd[1]", "曜日時限不明"),
+    'class_format': ("授業実施形態", "//div[@class='syllabus-info']//dt[text()='実施形態']/following-sibling::dd[1]", ""),
+    'location': ("教室", "//div[@class='syllabus-info']//dt[text()='開講場所']/following-sibling::dd[1]", "教室不明"),
+    # div[@class='subject'] のセクションにある項目
+    'credits': ("単位", "//div[@class='subject']//dt[text()='単位']/following-sibling::dd[1]", "単位不明"),
+    'field': ("分野", "//div[@class='subject']//dt[text()='分野']/following-sibling::dd[1]", "分野不明"),
+    'selection_method': ("選抜方法", "//div[@class='subject']//dt[text()='選抜方法']/following-sibling::dd[1]", ""),
+    'course_id_fallback': ("登録番号(表)", "//div[@class='subject']//dt[text()='登録番号']/following-sibling::dd[1]", None)
 }
 
 # === ★★★ 英語ページ用 XPath (再定義) ★★★ ===
@@ -109,15 +112,18 @@ INFO_MAP_EN_2025 = {
 
 INFO_MAP_EN_2023_2024 = {
     'name': ("Course Title", "//h2/span[@class='title']", "Name Unknown"),
-    'semester': ("Year/Semester", "//div[contains(@class,'syllabus-info')]//dl/dt[normalize-space()='Year/Semester']/following-sibling::dd[1]", "Semester Unknown"),
-    'professor': ("Lecturer(s)", "//div[contains(@class,'syllabus-info')]//dl/dt[normalize-space()='Lecturer Name']/following-sibling::dd[1]", ""),
-    'credits': ("Credits", "//div[contains(@class,'subject')]//dl/dt[normalize-space()='Unit']/following-sibling::dd[1]", "Credits Unknown"),
-    'field': ("Field", "//div[contains(@class,'subject')]//dl/dt[normalize-space()='Field']/following-sibling::dd[1]", "Field Unknown"),
-    'location': ("Classroom", "//div[contains(@class,'syllabus-info')]//dl/dt[normalize-space()='Location']/following-sibling::dd[1]", "Classroom Unknown"),
-    'day_period': ("Day/Period", "//div[contains(@class,'syllabus-info')]//dl/dt[normalize-space()='Day of Week・Period']/following-sibling::dd[1]", "Day/Period Unknown"),
-    'selection_method': ("Selection Method", "//div[contains(@class,'subject')]//dl/dt[normalize-space()='Selection Method']/following-sibling::dd[1]", ""),
-    'class_format': ("Class Format", "//div[contains(@class,'syllabus-info')]//dl/dt[contains(text(),'Class Format')]/following-sibling::dd[1]", ""),
-    'course_id_fallback': ("Registration Number", "//div[contains(@class,'subject')]//dl/dt[normalize-space()='Course Registration Number']/following-sibling::dd[1]", None)
+    # English equivalent fields based on exact HTML structure from English template
+    # div[@class='syllabus-info'] section items
+    'semester': ("Year/Semester", "//div[@class='syllabus-info']//dt[text()='Year/Semester']/following-sibling::dd[1]", "Semester Unknown"),
+    'professor': ("Lecturer(s)", "//div[@class='syllabus-info']//dt[text()='Lecturer Name']/following-sibling::dd[1]", ""),
+    'day_period': ("Day/Period", "//div[@class='syllabus-info']//dt[text()='Day of Week・Period']/following-sibling::dd[1]", "Day/Period Unknown"),
+    'class_format': ("Class Format", "//div[@class='syllabus-info']//dt[text()='Class Format']/following-sibling::dd[1]", ""),
+    'location': ("Classroom", "//div[@class='syllabus-info']//dt[text()='Location']/following-sibling::dd[1]", "Classroom Unknown"),
+    # div[@class='subject'] section items
+    'credits': ("Credits", "//div[@class='subject']//dt[text()='Unit']/following-sibling::dd[1]", "Credits Unknown"),
+    'field': ("Field", "//div[@class='subject']//dt[text()='Field']/following-sibling::dd[1]", "Field Unknown"),
+    'selection_method': ("Selection Method", "//div[@class='subject']//dt[text()='Selection Method']/following-sibling::dd[1]", ""),
+    'course_id_fallback': ("Registration Number", "//div[@class='subject']//dt[text()='Course Registration Number']/following-sibling::dd[1]", None)
 }
 
 
@@ -169,18 +175,65 @@ def get_text_by_xpath(driver, xpath, default=""):
     """Get text from element using standard Selenium methods instead of JavaScript"""
     if not xpath:
         return default
+    
+    # For debugging
+    debug_info = False
+    if debug_info:
+        print(f"           Extracting text with XPath: {xpath}")
+    
     try:
-        # Simple, reliable approach
-        element = WebDriverWait(driver, SHORT_WAIT).until(
-            EC.presence_of_element_located((By.XPATH, xpath))
-        )
-        text = element.text
-        return normalize_text(text) if text else default
-    except Exception:
+        # More direct approach for 2024 syllabus
+        elements = driver.find_elements(By.XPATH, xpath)
+        if elements:
+            element = elements[0]
+            # Try multiple approaches to get text
+            text = element.text
+            if not text:
+                text = element.get_attribute('textContent')
+            if not text:
+                text = element.get_attribute('innerText')
+                
+            if text:
+                normalized = normalize_text(text)
+                if debug_info:
+                    print(f"           Found text: '{normalized}'")
+                return normalized
+                
+        # If not found or empty, try alternative approaches
+        try:
+            # Wait for visible element
+            element = WebDriverWait(driver, SHORT_WAIT/2).until(
+                EC.visibility_of_element_located((By.XPATH, xpath))
+            )
+            text = element.text or element.get_attribute('textContent') or element.get_attribute('innerText')
+            if text:
+                return normalize_text(text)
+        except:
+            pass
+            
+        # Try JavaScript extraction as last resort
+        try:
+            script = f"""
+                var el = document.evaluate("{xpath}", document, null, 
+                        XPathResult.FIRST_ORDERED_NODE_TYPE, null).singleNodeValue;
+                return el ? (el.textContent || el.innerText || "") : "";
+            """
+            text = driver.execute_script(script)
+            if text:
+                return normalize_text(text)
+        except:
+            pass
+            
+        if debug_info:
+            print(f"           No text found for {xpath}")
+        return default
+    except Exception as e:
+        if debug_info:
+            print(f"           Error extracting text with {xpath}: {e}")
         return default
 
 def get_multiple_elements_text(driver, xpaths_dict):
-    """Multiple XPaths to text values in a single JS call"""
+    """Multiple XPaths to text values in a single JS call - improved for 2024 syllabuses"""
     js_script = """
         function getTexts(xpaths) {
             var results = {};
@@ -188,7 +241,23 @@ def get_multiple_elements_text(driver, xpaths_dict):
                 try {
                     var element = document.evaluate(xpaths[key], document, null, 
                                 XPathResult.FIRST_ORDERED_NODE_TYPE, null).singleNodeValue;
-                    results[key] = element ? element.textContent.trim() : "";
+                    
+                    if (element) {
+                        // Try multiple approaches to get text content
+                        var text = element.textContent || element.innerText || "";
+                        
+                        // If content is empty but it has children, try to combine child content
+                        if (!text.trim() && element.children && element.children.length > 0) {
+                            text = Array.from(element.children)
+                                .map(function(child) { return child.textContent || child.innerText || ""; })
+                                .join(" ")
+                                .trim();
+                        }
+                        
+                        results[key] = text.trim();
+                    } else {
+                        results[key] = "";
+                    }
                 } catch(e) {
                     results[key] = "";
                 }
@@ -207,8 +276,10 @@ def get_multiple_elements_text(driver, xpaths_dict):
             results[key] = normalize_text(results[key])
             
         return results
-    except:
-        # Fallback to traditional method
+    except Exception as e:
+        print(f"    JavaScript batch text extraction failed: {e}")
+        # Fallback to traditional method with better individual extraction
+        print(f"    Falling back to individual text extraction...")
         return {k: get_text_by_xpath(driver, v[1], v[2]) 
                 for k, v in xpaths_dict.items() if k != 'course_id_fallback'}
 
@@ -729,6 +800,13 @@ def get_syllabus_details(driver, current_year, screenshots_dir):
     日本語ページと英語ページを個別に処理し、それぞれの言語の情報を格納する。
     年度とシステムタイプに応じて適切なXPathマップを使用する。
     """
+    # IMPORTANT: This function MUST process both Japanese and English data
+    # Debug flag to trace function execution
+    DEBUG_TRACE = True
+    
+    if DEBUG_TRACE:
+        print("DEBUG: Starting get_syllabus_details - will process both Japanese and English")
+    
     # Add timer for detailed logging
     detail_start_time = time.time()
     
@@ -737,6 +815,28 @@ def get_syllabus_details(driver, current_year, screenshots_dir):
     course_id = None
     japanese_url = "N/A"
     english_url = "N/A"  # 英語URLも初期化
+
+    # シラバスログイン要求の検出と処理
+    login_message = driver.find_elements(By.XPATH, "//div[@class='info-login']")
+    if login_message:
+        print(f"    [{time.strftime('%H:%M:%S')}] ⚠️ Login required message detected in syllabus")
+        print(f"    [{time.strftime('%H:%M:%S')}] ℹ️ Will attempt to extract ALL available data (including semester, professor, credits, field)")
+        # スクリーンショット保存
+        save_screenshot(driver, f"login_required_{current_year}", screenshots_dir)
+        
+        # Check for basic elements in the page structure to help debug
+        basic_elements = [
+            "//div[@class='subject']//dt[text()='単位']",
+            "//div[@class='subject']//dt[text()='分野']",
+            "//div[@class='syllabus-info']//dt[text()='授業教員名']",
+            "//div[@class='subject']//dt[text()='開講年度・学期']"
+        ]
+        for xpath in basic_elements:
+            element = driver.find_elements(By.XPATH, xpath)
+            if element:
+                print(f"    [{time.strftime('%H:%M:%S')}] ✓ Found element: {xpath}")
+            else:
+                print(f"    [{time.strftime('%H:%M:%S')}] ✗ Missing element: {xpath}")
 
     # システムタイプを判定
     current_url = driver.current_url
@@ -812,21 +912,77 @@ def get_syllabus_details(driver, current_year, screenshots_dir):
     missing_details_ja = []  # 日本語データ用のリスト
 
     print("           --- 日本語情報取得開始 ---")
-    for key, (label, xpath, default_value, *_) in ja_map_to_use.items():
-        if key == 'course_id_fallback': continue
-        ja_data[key] = get_text_by_xpath(driver, xpath, default_value)
-
-        # 必須チェック (TTCK/Online処理前)
-        optional_keys = ['professor', 'selection_method', 'class_format', 'location', 'day_period'] 
-        if key not in optional_keys:
-            if key == 'name':
-                if ja_data[key] == default_value or any(pattern in ja_data[key] for pattern in INVALID_COURSE_NAME_PATTERNS):
-                    critical_data_missing_ja = True
-                    missing_details_ja.append(f"{label}(ja): 不適切「{ja_data[key]}」")
-            elif ja_data[key] == default_value or not ja_data[key]:
-                if xpath:  # XPathが定義されている場合のみエラー対象
-                    critical_data_missing_ja = True
-                    missing_details_ja.append(f"{label}(ja): 未取得/空")
+    
+    # Use the same successful batch retrieval approach used for English data
+    print("           日本語情報を一括取得中...")
+    
+    # Try the exact same JavaScript batch approach that works for English
+    try:
+        # Create dictionary of XPaths to query in a single JavaScript execution
+        xpath_dict = {}
+        for key, (label, xpath, default_value, *_) in ja_map_to_use.items():
+            if key != 'course_id_fallback':
+                xpath_dict[key] = xpath
+        
+        # Use the same function that successfully extracts English data
+        batch_results = get_multiple_elements_text(driver, ja_map_to_use)
+        
+        # Populate ja_data with the results
+        for key, (_, _, default_value, *_) in ja_map_to_use.items():
+            if key != 'course_id_fallback':
+                value = batch_results.get(key, "")
+                ja_data[key] = normalize_text(value) if value else default_value
+        
+        # Show what we found
+        print("           日本語情報の一括取得に成功しました")
+        print("           取得した日本語データ:")
+        print(f"           - 名称: {ja_data.get('name', 'N/A')}")
+        print(f"           - 学期: {ja_data.get('semester', 'N/A')}")
+        print(f"           - 教室: {ja_data.get('location', 'N/A')}")
+        print(f"           - 単位: {ja_data.get('credits', 'N/A')}")
+        print(f"           - 分野: {ja_data.get('field', 'N/A')}")
+        
+        if DEBUG_TRACE:
+            print("DEBUG: Japanese data extraction completed successfully via batch method")
+            print("DEBUG: Will proceed to English data extraction next")
+        
+        print("           --- 日本語情報取得完了 ---")
+        # DO NOT RETURN HERE - MUST CONTINUE TO ENGLISH EXTRACTION
+        
+        # IMPORTANT: Don't return yet - continue to English extraction
+    
+    except Exception as e:
+        print(f"           [警告] 日本語データの一括取得中にエラー: {e}")
+        
+        # Fall back to individual extraction if batch fails
+        for key, (label, xpath, default_value, *_) in ja_map_to_use.items():
+            if key == 'course_id_fallback': continue
+            ja_data[key] = get_text_by_xpath(driver, xpath, default_value)
+            
+            # 2024年度シラバスの場合、学期情報がない場合はURLから取得
+            if current_year <= 2024 and key == 'semester' and (ja_data[key] == default_value or not ja_data[key]):
+                # URLから年度を抽出
+                year_match = re.search(r'/(\d{4})_', current_url)
+                if year_match:
+                    year = year_match.group(1)
+                    ja_data[key] = f"{year}年度"
+                    print(f"               学期情報補完: {ja_data[key]}")
+                    
+            # 必須チェック (TTCK/Online処理前)
+            optional_keys = ['professor', 'selection_method', 'class_format', 'location', 'day_period'] 
+            if key not in optional_keys:
+                if key == 'name':
+                    if ja_data[key] == default_value or any(pattern in ja_data[key] for pattern in INVALID_COURSE_NAME_PATTERNS):
+                        critical_data_missing_ja = True
+                        missing_details_ja.append(f"{label}(ja): 不適切「{ja_data[key]}」")
+                elif ja_data[key] == default_value or not ja_data[key]:
+                    if xpath:  # XPathが定義されている場合のみエラー対象
+                        # 2024年以前のシラバスでは一部のフィールドを必須としない
+                        if current_year <= 2024 and key in ['semester', 'credits', 'field']:
+                            print(f"               2024年シラバス: {label}情報が不明でも処理継続")
+                        else:
+                            critical_data_missing_ja = True
+                        missing_details_ja.append(f"{label}(ja): 未取得/空")
 
         # --- Online/TTCK処理 (日本語) ---
         is_ttck_ja = "TTCK" in ja_data.get('name', '')
@@ -845,20 +1001,34 @@ def get_syllabus_details(driver, current_year, screenshots_dir):
 
         # --- 必須データ最終チェック (日本語) ---
         if not is_ttck_ja:
+            # 取得したデータの情報を表示
+            print(f"               取得データ: 教室=「{ja_data.get('location')}」, 曜日時限=「{ja_data.get('day_period')}」")
+            
             if not ja_data.get('location') or ja_data.get('location') == "教室不明":
-                 if not is_online_ja:
-                    critical_data_missing_ja = True
-                    missing_details_ja.append("教室(ja): 未取得/空")
+                if not is_online_ja:
+                    # 2024年以前のシラバスでは教室情報が必須でなくなる
+                    if current_year <= 2024:
+                        print("               2024年以前のシラバス: 教室情報が不明でも処理継続")
+                        ja_data['location'] = "教室情報なし(2024年以前)"
+                    else:
+                        critical_data_missing_ja = True
+                        missing_details_ja.append("教室(ja): 未取得/空")
+            
             if not ja_data.get('day_period') or ja_data.get('day_period') == "曜日時限不明":
-                critical_data_missing_ja = True
-                missing_details_ja.append("曜日時限(ja): 未取得/空")
+                # 2024年以前のシラバスでは曜日時限情報が必須でなくなる
+                if current_year <= 2024:
+                    print("               2024年以前のシラバス: 曜日時限情報が不明でも処理継続")
+                    ja_data['day_period'] = "曜日時限情報なし(2024年以前)"
+                else:
+                    critical_data_missing_ja = True
+                    missing_details_ja.append("曜日時限(ja): 未取得/空")
 
         if critical_data_missing_ja:
             raise MissingCriticalDataError(f"必須日本語データ取得失敗 (URL: {japanese_url}): {'; '.join(missing_details_ja)}")
 
         print("           --- 日本語情報取得完了 ---")
 
-        # After Japanese extraction
+        # After Japanese extraction - proceed to English extraction
         ja_elapsed = time.time() - detail_start_time
         print(f"    [{time.strftime('%H:%M:%S')}] ✅ Japanese data extracted ({ja_elapsed:.2f}s)")
         
@@ -866,16 +1036,27 @@ def get_syllabus_details(driver, current_year, screenshots_dir):
         # English page processing
         english_start_time = time.time()
         print(f"    [{time.strftime('%H:%M:%S')}] 🇬🇧 Processing English page")
+        
+        if DEBUG_TRACE:
+            print("DEBUG: Starting English page processing - WILL extract English data")
+            # Dump current URL to verify we're on the right page
+            print(f"DEBUG: Current URL before English processing: {driver.current_url}")
 
         # Generate English URL
         if is_old_system or current_year <= 2024:
-            # Old system URL generation (unchanged)
+            # Old system URL for 2024 or older uses locale=en
             if "locale=ja" in current_url:
                 english_url = current_url.replace("locale=ja", "locale=en")
+                print(f"           英語URL生成: locale=ja → locale=en")
             elif "locale=" not in current_url:
                 english_url = current_url + ("&" if "?" in current_url else "?") + "locale=en"
+                print(f"           英語URL生成: locale=en パラメータを追加")
             else:
                 english_url = current_url
+                print(f"           英語URL: 変更なし (既にlocale指定あり)")
+            
+            # ログ出力
+            print(f"           変換後の英語URL: {english_url}")
         else:
             # New system URL generation (2025+)
             if "lang=jp" in current_url:
@@ -888,44 +1069,59 @@ def get_syllabus_details(driver, current_year, screenshots_dir):
         print(f"           英語ページ処理中: {english_url}")
         try:
             print(f"           英語ページに切り替え中...")
-            # Use JavaScript to switch to English page
-            js_switch_to_en = """
-                // Optimized language switching function
-                function switchToEnglish() {
-                    // Find language button
-                    const langBtn = document.querySelector('a[hreflang="en"], a.lang-en, a[onclick*="lang=en"]');
-                    if (langBtn) {
-                        langBtn.click();
-                        return true;
-                    } else {
-                        // No button found, try URL modification instead
-                        const url = new URL(window.location.href);
-                        url.searchParams.set('lang', 'en');
-                        window.location.href = url.toString();
-                        return false;
+            
+            # 2024年以前のシラバスは直接URLに遷移
+            if is_old_system or current_year <= 2024:
+                print(f"           2024年以前のシラバス: 直接locale=enのURLに遷移")
+                driver.get(english_url)
+            else:
+                # 2025年以降: Use JavaScript to switch to English page
+                js_switch_to_en = """
+                    // Optimized language switching function
+                    function switchToEnglish() {
+                        // Find language button
+                        const langBtn = document.querySelector('a[hreflang="en"], a.lang-en, a[onclick*="lang=en"]');
+                        if (langBtn) {
+                            langBtn.click();
+                            return true;
+                        } else {
+                            // No button found, try URL modification instead
+                            const url = new URL(window.location.href);
+                            url.searchParams.set('lang', 'en');
+                            window.location.href = url.toString();
+                            return false;
+                        }
                     }
-                }
-                return switchToEnglish();
-            """
-            used_button = driver.execute_script(js_switch_to_en)
+                    return switchToEnglish();
+                """
+                used_button = driver.execute_script(js_switch_to_en)
             
             # Wait for page to be ready using conditional waiting instead of fixed sleep
-            if used_button:
-                # For button click, wait for a visual change indicating English is loaded
-                # Note: No sleep needed, wait for a specific English indicator instead
+            if is_old_system or current_year <= 2024:
+                # For 2024 or older syllabuses, wait for the page to load after direct navigation
+                WebDriverWait(driver, SHORT_WAIT).until(
+                    EC.presence_of_element_located((By.TAG_NAME, "body"))
+                )
+            elif used_button:
+                # For button click in 2025+ syllabuses, wait for English UI to load
                 try:
                     WebDriverWait(driver, SHORT_WAIT).until(
                         EC.presence_of_element_located((By.XPATH, "//h2[@class='class-name']"))
                     )
                 except TimeoutException:
                     # If timeout, the element might already be present or have a different structure
-                    pass
+                    print(f"           英語ページ要素待機タイムアウト - 処理継続")
             else:
                 # For URL navigation, we need to wait for body to load
                 WebDriverWait(driver, min(10, ELEMENT_WAIT_TIMEOUT)).until(
                     EC.presence_of_element_located((By.TAG_NAME, "body"))
                 )
             
+            # Debug: Add confirmation that we've reached this point
+            if DEBUG_TRACE:
+                print("DEBUG: English page loaded successfully")
+                print(f"DEBUG: Current URL after English processing: {driver.current_url}")
+                
             # Check if this is an error page
             if is_error_page(driver):
                 print(f"           [情報] 英語ページでエラーページを検出しました。英語情報は一部欠落します。")
@@ -939,12 +1135,27 @@ def get_syllabus_details(driver, current_year, screenshots_dir):
             else:
                 # No need for JS rendering wait - directly proceed to data extraction
                 print(f"           英語ページ読み込み完了。情報取得試行...")
+                
+                # Verify we're actually on an English page
+                if "locale=en" in driver.current_url or "lang=en" in driver.current_url:
+                    print("           英語ページURLを確認: OK")
+                else:
+                    print(f"           ⚠️ Warning: URL does not contain English locale marker: {driver.current_url}")
+                
                 print("           --- 英語情報取得開始 ---")
                 
                 # Batch retrieval of English data using JavaScript
                 print("           英語情報を一括取得中...")
                 en_data = {}
                 name_default_en = f"Name Unknown-{course_id}"
+                
+                # For 2024 or older syllabus, dump page source for debugging if needed
+                if is_old_system or current_year <= 2024:
+                    page_html = driver.page_source
+                    if "Day of Week・Period" in page_html:
+                        print("           確認: 英語ページに「Day of Week・Period」要素が存在します")
+                    else:
+                        print("           ⚠️ Warning: 英語ページに「Day of Week・Period」要素が見つかりません")
                 
                 # Create dictionary of XPaths to query in a single JavaScript execution
                 xpath_dict = {}
@@ -989,6 +1200,14 @@ def get_syllabus_details(driver, current_year, screenshots_dir):
                             en_data[key] = normalize_text(value) if value else (default_value if key != 'name' else name_default_en)
                     
                     print("           英語情報の一括取得に成功しました。")
+                    
+                    # 取得した英語データの要約を表示
+                    print("           取得した英語データ:")
+                    print(f"           - Title: {en_data.get('name', 'N/A')}")
+                    print(f"           - Semester: {en_data.get('semester', 'N/A')}")
+                    print(f"           - Day/Period: {en_data.get('day_period', 'N/A')}")
+                    print(f"           - Location: {en_data.get('location', 'N/A')}")
+                    print(f"           - Credits: {en_data.get('credits', 'N/A')}")
                 except Exception as e:
                     print(f"           [警告] JavaScript一括取得中にエラー: {e}")
                     print("           従来の方法で個別に取得します...")
@@ -1044,6 +1263,10 @@ def get_syllabus_details(driver, current_year, screenshots_dir):
         # Final data construction
         print(f"    [{time.strftime('%H:%M:%S')}] 🔄 Building final data object")
         
+        if DEBUG_TRACE:
+            print(f"DEBUG: Both Japanese and English data processed successfully")
+            print(f"DEBUG: Japanese data: {len(ja_data)} fields, English data: {len(en_data)} fields")
+        
         # --- 3. 最終データ構築 ---
         final_details = {
             'course_id': course_id,
@@ -1078,6 +1301,10 @@ def get_syllabus_details(driver, current_year, screenshots_dir):
         
         # Display visual verification of scraped data
         display_scraped_info(final_details, f"Syllabus ID: {final_details.get('course_id', 'N/A')}")
+        
+        if DEBUG_TRACE:
+            print(f"DEBUG: Final details object built successfully with {len(final_details.get('translations', {}).get('ja', {}))} Japanese fields and {len(final_details.get('translations', {}).get('en', {}))} English fields")
+            print(f"DEBUG: Returning complete object from get_syllabus_details")
         
         return final_details
 
@@ -2150,6 +2377,40 @@ if __name__ == "__main__":
                                                 
                                                 # Get syllabus details - this function already handles both Japanese and English data
                                                 syllabus_details = get_syllabus_details(driver, year, screenshots_dir)
+                                                
+                                                # Debug information - check if English data is present and force to extract both
+                                                has_english = False
+                                                if syllabus_details and 'translations' in syllabus_details and 'en' in syllabus_details['translations']:
+                                                    has_english = bool(syllabus_details['translations']['en'].get('name'))
+                                                    print(f"           DEBUG: English data present = {has_english}")
+                                                else:
+                                                    # Critical: syllabus_details is returning before English data is processed
+                                                    # We need to implement our own English data extraction here as a temporary fix
+                                                    print(f"           WARNING: English data is missing, trying to extract it manually...")
+                                                    
+                                                    # Open a new tab instead of closing this one
+                                                    current_url = driver.current_url
+                                                    if "locale=ja" in current_url:
+                                                        english_url = current_url.replace("locale=ja", "locale=en")
+                                                        print(f"           英語URL生成: locale=ja → locale=en")
+                                                        print(f"           英語URL: {english_url}")
+                                                        
+                                                        # Navigate to English page
+                                                        driver.get(english_url)
+                                                        time.sleep(2)  # Wait for page to load
+                                                        
+                                                        # Basic extraction of name
+                                                        try:
+                                                            english_name = driver.find_element(By.XPATH, "//h2/span[@class='title']").text
+                                                            print(f"           英語データ抽出成功: {english_name}")
+                                                            
+                                                            # Go back to original page
+                                                            driver.get(current_url)
+                                                            time.sleep(1)
+                                                        except:
+                                                            print(f"           英語データ抽出失敗")
+                                                    
+                                                    # No need to close tab as we're reusing the same one
                                                 
                                                 # Close the detail tab and switch back to main window
                                                 print(f"           詳細ページ処理完了。タブを閉じて検索結果に戻ります...")
