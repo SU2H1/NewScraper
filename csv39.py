@@ -40,7 +40,7 @@ OUTPUT_DIR_NAME = 'syllabus_output' # 出力ディレクトリ名
 OUTPUT_JSON_FILE = 'syllabus_data.json' # 出力JSONファイル名
 TARGET_FIELDS = ["特設科目"] # スクレイピング対象の分野
 #TARGET_FIELDS = ["基盤科目", "先端科目", "特設科目"] # スクレイピング対象の分野
-TARGET_YEARS = [2025] # スクレイピング対象の年度
+TARGET_YEARS = [2024] # スクレイピング対象の年度
 #TARGET_YEARS = [2025, 2024, 2023] # スクレイピング対象の年度
 CONSECUTIVE_ERROR_THRESHOLD = 10  # 連続エラーの最大許容数 (値を増加)
 ERROR_RATE_THRESHOLD = 0.8  # エラー率の許容閾値（80%に増加）
@@ -754,79 +754,79 @@ def get_syllabus_details(driver, current_year, screenshots_dir):
         ja_map_to_use = INFO_MAP_JA_2025.copy()
         en_map_to_use = INFO_MAP_EN_2025.copy()
 
-# --- Course ID 取得 ---
-        print(f"    [{time.strftime('%H:%M:%S')}] 🔢 Extracting course ID")
-        try:
-            # 旧システムと新システムで異なるパターンを使用
-            if is_old_system or current_year <= 2024:
-                # 旧システム用のコースID取得パターン
-                id_match = re.search(r'/courses/\d+_(\d+)', current_url) or \
-                        re.search(r'\?id=(\d+)', current_url)
-            else:
-                # 新システム用のコースID取得パターン - 2025 format
-                id_match = re.search(r'[?&](?:id|entno)=(\d+)', current_url) or \
-                        re.search(r'/courses/\d+_(\d+)', current_url) or \
-                        re.search(r'/syllabus/(\d+)', current_url) or \
-                        re.search(r'ttblyr=\d+&entno=(\d+)', current_url) 
-                
-            if id_match:
-                course_id = id_match.group(1)
-            else:
-                course_id_xpath = ja_map_to_use.get('course_id_fallback', [None, None])[1]
-                if course_id_xpath:
-                    print(f"               URLからID取得失敗。XPathで試行: {course_id_xpath}")
-                    reg_num = get_text_by_xpath(driver, course_id_xpath)
-                    if reg_num and reg_num.isdigit():
-                        course_id = reg_num
-                    else:
-                        try:
-                            hidden_elements = driver.find_elements(By.XPATH, "//input[@type='hidden' and (contains(@name, 'id') or contains(@name, 'entno'))]")
-                            for hidden in hidden_elements:
-                                value = hidden.get_attribute('value')
-                                if value and value.isdigit():
-                                    course_id = value
-                                    print(f"               隠し要素からID取得: {value}")
-                                    break
-                        except Exception: pass
-        except Exception as e:
-            print(f"    [{time.strftime('%H:%M:%S')}] ⚠️ Error during Course ID extraction: {e}")
-
-        if course_id:
-            print(f"    [{time.strftime('%H:%M:%S')}] ✅ Course ID found: {course_id}")
+    # --- Course ID 取得 ---
+    print(f"    [{time.strftime('%H:%M:%S')}] 🔢 Extracting course ID")
+    try:
+        # 旧システムと新システムで異なるパターンを使用
+        if is_old_system or current_year <= 2024:
+            # 旧システム用のコースID取得パターン
+            id_match = re.search(r'/courses/\d+_(\d+)', current_url) or \
+                    re.search(r'\?id=(\d+)', current_url)
         else:
-            print(f"    [{time.strftime('%H:%M:%S')}] ⚠️ Failed to find Course ID, trying alternative methods")
+            # 新システム用のコースID取得パターン - 2025 format
+            id_match = re.search(r'[?&](?:id|entno)=(\d+)', current_url) or \
+                    re.search(r'/courses/\d+_(\d+)', current_url) or \
+                    re.search(r'/syllabus/(\d+)', current_url) or \
+                    re.search(r'ttblyr=\d+&entno=(\d+)', current_url) 
+            
+        if id_match:
+            course_id = id_match.group(1)
+        else:
+            course_id_xpath = ja_map_to_use.get('course_id_fallback', [None, None])[1]
+            if course_id_xpath:
+                print(f"               URLからID取得失敗。XPathで試行: {course_id_xpath}")
+                reg_num = get_text_by_xpath(driver, course_id_xpath)
+                if reg_num and reg_num.isdigit():
+                    course_id = reg_num
+                else:
+                    try:
+                        hidden_elements = driver.find_elements(By.XPATH, "//input[@type='hidden' and (contains(@name, 'id') or contains(@name, 'entno'))]")
+                        for hidden in hidden_elements:
+                            value = hidden.get_attribute('value')
+                            if value and value.isdigit():
+                                course_id = value
+                                print(f"               隠し要素からID取得: {value}")
+                                break
+                    except Exception: pass
+    except Exception as e:
+        print(f"    [{time.strftime('%H:%M:%S')}] ⚠️ Error during Course ID extraction: {e}")
 
-        if not course_id:
-            print(f"    [{time.strftime('%H:%M:%S')}] ❌ Critical: Failed to find Course ID")
-            raise MissingCriticalDataError(f"必須データ(Course ID)の取得に失敗 (URL: {japanese_url})")
-        print(f"               Course ID: {course_id}")
+    if course_id:
+        print(f"    [{time.strftime('%H:%M:%S')}] ✅ Course ID found: {course_id}")
+    else:
+        print(f"    [{time.strftime('%H:%M:%S')}] ⚠️ Failed to find Course ID, trying alternative methods")
 
-        # --- 日本語情報取得ループ ---
-        print(f"    [{time.strftime('%H:%M:%S')}] 📝 Extracting Japanese syllabus data")
-        name_default_ja = f"名称不明-{course_id}"
-        name_tuple_ja = ja_map_to_use['name']
-        ja_map_to_use['name'] = (name_tuple_ja[0], name_tuple_ja[1], name_default_ja)
+    if not course_id:
+        print(f"    [{time.strftime('%H:%M:%S')}] ❌ Critical: Failed to find Course ID")
+        raise MissingCriticalDataError(f"必須データ(Course ID)の取得に失敗 (URL: {japanese_url})")
+    print(f"               Course ID: {course_id}")
 
-        INVALID_COURSE_NAME_PATTERNS = ["慶應義塾大学 シラバス・時間割", "SFC Course Syllabus"]
-        critical_data_missing_ja = False  # 日本語データ用のフラグ
-        missing_details_ja = []  # 日本語データ用のリスト
+    # --- 日本語情報取得ループ ---
+    print(f"    [{time.strftime('%H:%M:%S')}] 📝 Extracting Japanese syllabus data")
+    name_default_ja = f"名称不明-{course_id}"
+    name_tuple_ja = ja_map_to_use['name']
+    ja_map_to_use['name'] = (name_tuple_ja[0], name_tuple_ja[1], name_default_ja)
 
-        print("           --- 日本語情報取得開始 ---")
-        for key, (label, xpath, default_value, *_) in ja_map_to_use.items():
-            if key == 'course_id_fallback': continue
-            ja_data[key] = get_text_by_xpath(driver, xpath, default_value)
+    INVALID_COURSE_NAME_PATTERNS = ["慶應義塾大学 シラバス・時間割", "SFC Course Syllabus"]
+    critical_data_missing_ja = False  # 日本語データ用のフラグ
+    missing_details_ja = []  # 日本語データ用のリスト
 
-            # 必須チェック (TTCK/Online処理前)
-            optional_keys = ['professor', 'selection_method', 'class_format', 'location', 'day_period'] 
-            if key not in optional_keys:
-                if key == 'name':
-                    if ja_data[key] == default_value or any(pattern in ja_data[key] for pattern in INVALID_COURSE_NAME_PATTERNS):
-                        critical_data_missing_ja = True
-                        missing_details_ja.append(f"{label}(ja): 不適切「{ja_data[key]}」")
-                elif ja_data[key] == default_value or not ja_data[key]:
-                    if xpath:  # XPathが定義されている場合のみエラー対象
-                        critical_data_missing_ja = True
-                        missing_details_ja.append(f"{label}(ja): 未取得/空")
+    print("           --- 日本語情報取得開始 ---")
+    for key, (label, xpath, default_value, *_) in ja_map_to_use.items():
+        if key == 'course_id_fallback': continue
+        ja_data[key] = get_text_by_xpath(driver, xpath, default_value)
+
+        # 必須チェック (TTCK/Online処理前)
+        optional_keys = ['professor', 'selection_method', 'class_format', 'location', 'day_period'] 
+        if key not in optional_keys:
+            if key == 'name':
+                if ja_data[key] == default_value or any(pattern in ja_data[key] for pattern in INVALID_COURSE_NAME_PATTERNS):
+                    critical_data_missing_ja = True
+                    missing_details_ja.append(f"{label}(ja): 不適切「{ja_data[key]}」")
+            elif ja_data[key] == default_value or not ja_data[key]:
+                if xpath:  # XPathが定義されている場合のみエラー対象
+                    critical_data_missing_ja = True
+                    missing_details_ja.append(f"{label}(ja): 未取得/空")
 
         # --- Online/TTCK処理 (日本語) ---
         is_ttck_ja = "TTCK" in ja_data.get('name', '')
@@ -2011,7 +2011,7 @@ if __name__ == "__main__":
                                             if (el.onclick) {
                                                 const onclickStr = el.onclick.toString();
                                                 if (onclickStr.includes('syllabus') || onclickStr.includes('detail')) {
-                                                    const matches = onclickStr.match(/window\.open\\(['"]([^'"]+)['"]/);
+                                                    const matches = onclickStr.match(/window\.open\(['"]([^'"]+)['"]/);
                                                     if (matches && matches[1]) {
                                                         syllabusUrls.push(matches[1]);
                                                     }
